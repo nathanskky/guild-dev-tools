@@ -22,6 +22,7 @@ use Guild\DevTools\Testing\Visit;
 use Guild\DevTools\Testing\VisitResponse;
 use Guild\DevTools\Testing\VisitsApplication;
 use Guild\Framework\Exception\ConfigurationException;
+use Guild\Framework\Model\Group;
 use Guild\Framework\Model\Role;
 use Guild\Framework\Model\RolePermission;
 use Guild\Framework\Testing\ArraySessionStore;
@@ -112,6 +113,91 @@ final class VisitTest extends TestCase
         $this->expectExceptionMessageMatches("/'editr'.*signedInAs\\(\\)/");
 
         $visit->get('/documents');
+    }
+
+    public function testPostFillsInTheCsrfToken(): void
+    {
+        $response = $this->signedInAs('editor')->post('/documents', ['title' => 'Minutes']);
+
+        self::assertSame(201, $response->status(), 'the form was accepted without the test handling the token');
+        $response->assertSee('stored Minutes');
+    }
+
+    public function testAWrongCsrfTokenIsRefused(): void
+    {
+        $this->signedInAs('editor')->post('/documents', ['_csrf' => 'wrong'])->assertForbidden()->assertSee('Form expired');
+    }
+
+    public function testADirectoryOutageAppliesOnlyToTheDerivedVisit(): void
+    {
+        $visit = $this->signedInAs('editor');
+
+        $visit->duringDirectoryOutage()->get('/documents')->assertServiceUnavailable();
+        $visit->get('/documents')->assertOk();
+    }
+
+    public function testAnOutageAfterBrowsingIsAnsweredFromTheCache(): void
+    {
+        $visit = $this->signedInAs('editor');
+        $visit->get('/documents')->assertOk();
+
+        // The copy keeps the membership the first request cached, which is within its TTL, as in production.
+        $visit->duringDirectoryOutage()->get('/documents')->assertOk();
+    }
+
+    public function testTwoVisitsAreSeparateVisitors(): void
+    {
+        $editor = $this->signedInAs('editor');
+        $guest = $this->asGuest();
+
+        $editor->get('/documents')->assertOk();
+        $guest->get('/documents')->assertRedirectsToSignIn();
+        $editor->get('/documents')->assertOk();
+    }
+
+    public function testAGrantWrittenMidTestAppliesOnTheNextRequest(): void
+    {
+        $reviewers = new PersonaGroup('iu:roles:sys:acm:starter-reviewers', 'Starter Reviewers');
+        $visit = $this->signedInAs(new Persona('reviewer', username: 'persona-reviewer', name: 'Rey Reviewer', groups: [$reviewers]));
+        $visit->get('/documents')->assertForbidden();
+
+        // An administrator maps the group to a role that may view documents.
+        $group = new Group();
+        $group->name = $reviewers->label;
+        $group->group_identifier = $reviewers->identifier;
+        $group->active = true;
+        $group->created_by = 'jdoe';
+        $group->save();
+        $role = new Role();
+        $role->name = 'Reviewer';
+        $role->active = true;
+        $role->created_by = 'jdoe';
+        $role->save();
+        $group->roles()->attach($role->id, ['created_by' => 'jdoe']);
+        $permission = new RolePermission();
+        $permission->role_id = $role->id;
+        $permission->name = 'documents.view';
+        $permission->active = true;
+        $permission->created_by = 'jdoe';
+        $permission->save();
+
+        $visit->get('/documents')->assertOk();
+    }
+
+    public function testASessionCarriesAcrossAVisitsRequests(): void
+    {
+        $visit = $this->signedInAs('editor');
+
+        $visit->post('/framework/sign-out')->assertRedirect('/_dev/personas');
+        $visit->get('/documents')->assertRedirectsToSignIn();
+    }
+
+    public function testHeadersAreSentWithEveryRequest(): void
+    {
+        $visit = $this->signedInAs('editor')->withHeaders(['X-Test' => 'yes']);
+
+        $visit->get('/echo-header')->assertSee('yes');
+        $visit->get('/echo-header')->assertSee('yes');
     }
 
     public function testTheTransactionIsOpenBeforeSetUp(): void

@@ -20,7 +20,7 @@ return new PersonaRoster(
         new Persona('outage', username: 'persona-outage', name: 'Grouper Down', directory: DirectoryStatus::Unavailable),
     ],
     grants: [
-        new RoleGrant('Editor', groups: [$editors], permissions: [FixturePermission::DocumentsView]),
+        new RoleGrant('Editor', groups: [$editors], permissions: [FixturePermission::DocumentsView, FixturePermission::DocumentsEdit]),
     ],
     systemAdminGroup: $admins,
 );

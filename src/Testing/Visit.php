@@ -7,7 +7,9 @@ namespace Guild\DevTools\Testing;
 use Guild\DevTools\Persona\Persona;
 use Guild\DevTools\Persona\PersonaKey;
 use Guild\DevTools\Persona\PersonaRoster;
+use Guild\DevTools\SignIn\DirectoryOutage;
 use Guild\DevTools\SignIn\SignedInPersona;
+use Guild\Framework\Admin\Csrf;
 use Guild\Framework\Application;
 use Guild\Framework\Exception\ConfigurationException;
 use Guild\Framework\Router;
@@ -69,15 +71,78 @@ final readonly class Visit
      */
     public function get(string $uri): VisitResponse
     {
-        return $this->send('GET', $uri);
+        return $this->send('GET', $uri, null);
     }
 
-    private function send(string $method, string $uri): VisitResponse
+    /**
+     * Submit a form. The session's CSRF token is filled in unless $data
+     * already has one, so a test can send a wrong token on purpose.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function post(string $uri, array $data = []): VisitResponse
+    {
+        return $this->send('POST', $uri, $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function put(string $uri, array $data = []): VisitResponse
+    {
+        return $this->send('PUT', $uri, $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function delete(string $uri, array $data = []): VisitResponse
+    {
+        return $this->send('DELETE', $uri, $data);
+    }
+
+    /**
+     * This visitor with Grouper down. The copy takes the session as it is
+     * now, so membership an earlier request cached is still served within
+     * its TTL, as in production; start the outage before the first request
+     * to see the 503.
+     */
+    #[NoDiscard]
+    public function duringDirectoryOutage(): self
+    {
+        $copy = clone($this, ['session' => clone $this->session]);
+        new DirectoryOutage($copy->session)->turnOn();
+
+        return $copy;
+    }
+
+    /**
+     * This visitor sending $headers, over any it already sends, with every request.
+     *
+     * @param  array<non-empty-string, string>  $headers
+     */
+    #[NoDiscard]
+    public function withHeaders(array $headers): self
+    {
+        return clone($this, ['session' => clone $this->session, 'headers' => [...$this->headers, ...$headers]]);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $data  The form body; null for a GET.
+     */
+    private function send(string $method, string $uri, ?array $data): VisitResponse
     {
         $absolute = str_starts_with($uri, '/') ? self::ORIGIN . $uri : $uri;
         parse_str((string) parse_url($absolute, PHP_URL_QUERY), $query);
 
         $request = new ServerRequest(uri: $absolute, method: $method, headers: $this->headers, queryParams: $query);
+
+        if ($data !== null) {
+            // The token lives in the visit's session, the one the application will read.
+            $data += [Csrf::FIELD => new Csrf($this->session)->token()];
+            $request = $request->withParsedBody($data);
+        }
+
         $app = ApplicationUnderTest::boot(
             $this->basePath,
             $this->session,
