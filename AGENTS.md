@@ -53,7 +53,8 @@ explicitly.
 - `Persona\` — the roster's value objects: `PersonaKey`, `Persona`, `PersonaGroup`, `RoleGrant`,
   `DirectoryStatus`, `PersonaRoster`
 - `SignIn\` — `PersonaSignIn` (the `SignInMethod`), `PersonaGroupDirectory` (the `GroupDirectory`),
-  and their session state `SignedInPersona` and `DirectoryOutage`; `LocalHost`
+  and their session state `SignedInPersona` and `DirectoryOutage`; `LocalHost`; `ReturnPath`, the one rule for
+  where a visitor may be sent back to
 - `Grant\` — `PersonaGrantSeeder`
 - `Testing\` — the test kit: `VisitsApplication` (trait for test cases), `Visit`, `VisitResponse` (API), and
   `ApplicationUnderTest`, `TestDatabase` (internal)
@@ -71,7 +72,7 @@ explicitly.
 - **`PersonaSignIn::challenge()` redirects to `/_dev/personas`**, the persona picker, which does not exist
   yet. Until it does, a guest on a `RequireSignIn` route gets a 404 after the redirect.
 - **The challenge's return path relies on the PSR-7 URI.** Laminas normalises `//host` paths and encodes
-  backslashes before `PersonaSignIn` sees them; `returnTarget()` refuses both anyway.
+  backslashes before `PersonaSignIn` sees them; `ReturnPath` refuses both anyway.
 - **Claimed classes must be bound in `boot()`.** The framework checks at `create()` that the container can
   build each chosen class, and builds nothing there, so a test can still override `SessionStore` afterwards.
 

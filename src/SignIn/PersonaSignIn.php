@@ -39,11 +39,20 @@ final readonly class PersonaSignIn implements SignInMethod
     #[Override]
     public function read(): ?Identity
     {
+        return $this->signedInPersona()?->identity;
+    }
+
+    /**
+     * The persona this visitor is signed in as, or null for a guest. A key
+     * the roster no longer has is cleared, with a notice, and reads as a guest.
+     */
+    public function signedInPersona(): ?Persona
+    {
         $key = $this->signedIn->key();
         $persona = $key === null ? null : $this->roster->find($key);
 
         if ($persona !== null) {
-            return $persona->identity;
+            return $persona;
         }
 
         $stored = $this->signedIn->storedValue();
@@ -111,20 +120,17 @@ final readonly class PersonaSignIn implements SignInMethod
 
     /**
      * Where to send the visitor once they have chosen: the page they asked
-     * for, when it is a GET to a path on this site, else the root.
+     * for, when it is a GET to a page of this site, else the root.
      */
     private static function returnTarget(ServerRequestInterface $request): string
     {
-        $path = $request->getUri()->getPath();
-
-        $onThisSite = str_starts_with($path, '/') && ! str_starts_with($path, '//') && ! str_starts_with($path, '/\\');
-
-        if (! $onThisSite || ! in_array(strtoupper($request->getMethod()), ['GET', 'HEAD'], true)) {
+        if (! in_array(strtoupper($request->getMethod()), ['GET', 'HEAD'], true)) {
             return '/';
         }
 
+        $path = $request->getUri()->getPath();
         $query = $request->getUri()->getQuery();
 
-        return $query === '' ? $path : $path . '?' . $query;
+        return ReturnPath::from($query === '' ? $path : $path . '?' . $query);
     }
 }

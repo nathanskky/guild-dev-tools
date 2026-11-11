@@ -44,6 +44,37 @@ final readonly class PersonaRoster
         return array_find($this->personas, static fn (Persona $persona): bool => $persona->username === $username);
     }
 
+    /**
+     * The grants that name at least one of $persona's groups, in roster order:
+     * what the persona may do once signed in.
+     *
+     * @return list<RoleGrant>
+     */
+    public function grantsFor(Persona $persona): array
+    {
+        $identifiers = array_map(static fn (PersonaGroup $group): string => $group->identifier, $persona->groups);
+
+        return array_values(array_filter(
+            $this->grants,
+            static fn (RoleGrant $grant): bool => array_any(
+                $grant->groups,
+                static fn (PersonaGroup $group): bool => in_array($group->identifier, $identifiers, true),
+            ),
+        ));
+    }
+
+    /**
+     * Whether $persona is in the roster's System Admin group. False when the
+     * roster names none.
+     */
+    public function isSystemAdmin(Persona $persona): bool
+    {
+        $adminGroup = $this->systemAdminGroup;
+
+        return $adminGroup !== null
+            && array_any($persona->groups, static fn (PersonaGroup $group): bool => $group->identifier === $adminGroup->identifier);
+    }
+
     private function checkPersonas(): void
     {
         if ($this->personas === []) {

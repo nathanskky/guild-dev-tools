@@ -124,6 +124,42 @@ final class PersonaRosterTest extends TestCase
         new RoleGrant(' ');
     }
 
+    public function testGrantsForGivesTheGrantsOfThePersonasGroups(): void
+    {
+        $editors = new PersonaGroup('iu:roles:sys:acm:editors', 'Editors');
+        $readers = new PersonaGroup('iu:roles:sys:acm:readers', 'Readers');
+        $editor = new Persona('editor', username: 'persona-editor', name: 'Erin Editor', groups: [$editors]);
+        $newcomer = new Persona('newcomer', username: 'persona-newcomer', name: 'Nico Newcomer');
+        $roster = new PersonaRoster([$editor, $newcomer], grants: [
+            new RoleGrant('Editor', groups: [$editors]),
+            new RoleGrant('Reader', groups: [$readers, $editors]),
+            new RoleGrant('Auditor', groups: [$readers]),
+        ]);
+
+        self::assertSame(
+            ['Editor', 'Reader'],
+            array_map(static fn (RoleGrant $grant): string => $grant->role, $roster->grantsFor($editor)),
+            'every grant naming one of the persona\'s groups, in roster order',
+        );
+        self::assertSame([], $roster->grantsFor($newcomer), 'a persona in no group holds no grant');
+    }
+
+    public function testIsSystemAdminMatchesTheSystemAdminGroup(): void
+    {
+        $roster = self::exampleRoster();
+        $admin = $roster->find(new PersonaKey(FixtureRoster::ADMIN));
+        $editor = $roster->find(new PersonaKey(FixtureRoster::EDITOR));
+        self::assertNotNull($admin);
+        self::assertNotNull($editor);
+
+        self::assertTrue($roster->isSystemAdmin($admin), 'a persona in the System Admin group is a System Admin');
+        self::assertFalse($roster->isSystemAdmin($editor), 'one outside it is not');
+        self::assertFalse(
+            new PersonaRoster([$admin])->isSystemAdmin($admin),
+            'a roster that names no System Admin group has no System Admin',
+        );
+    }
+
     private function expectRejection(string $message): void
     {
         $this->expectException(ConfigurationException::class);

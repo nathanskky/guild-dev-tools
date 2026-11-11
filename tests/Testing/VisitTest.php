@@ -15,6 +15,7 @@ use Guild\DevTools\SignIn\DirectoryOutage;
 use Guild\DevTools\SignIn\LocalHost;
 use Guild\DevTools\SignIn\PersonaGroupDirectory;
 use Guild\DevTools\SignIn\PersonaSignIn;
+use Guild\DevTools\SignIn\ReturnPath;
 use Guild\DevTools\SignIn\SignedInPersona;
 use Guild\DevTools\Test\Support\FixturePermission;
 use Guild\DevTools\Test\Support\FixtureRoster;
@@ -48,6 +49,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(SignedInPersona::class)]
 #[UsesClass(DirectoryOutage::class)]
 #[UsesClass(LocalHost::class)]
+#[UsesClass(ReturnPath::class)]
 #[UsesClass(ArraySessionStore::class)]
 final class VisitTest extends TestCase
 {

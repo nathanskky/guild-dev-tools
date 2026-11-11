@@ -9,6 +9,7 @@ use Guild\DevTools\Persona\PersonaKey;
 use Guild\DevTools\Persona\PersonaRoster;
 use Guild\DevTools\SignIn\LocalHost;
 use Guild\DevTools\SignIn\PersonaSignIn;
+use Guild\DevTools\SignIn\ReturnPath;
 use Guild\DevTools\SignIn\SignedInPersona;
 use Guild\Framework\Admin\Csrf;
 use Guild\Framework\Testing\ArraySessionStore;
@@ -28,6 +29,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 #[CoversClass(PersonaSignIn::class)]
 #[CoversClass(SignedInPersona::class)]
 #[UsesClass(LocalHost::class)]
+#[UsesClass(ReturnPath::class)]
 #[UsesClass(Persona::class)]
 #[UsesClass(PersonaKey::class)]
 #[UsesClass(PersonaRoster::class)]
@@ -83,6 +85,29 @@ final class PersonaSignInTest extends TestCase
         self::assertTrue(
             $this->log->hasRecord("Persona 'retired' is no longer in config/personas.php; the session was signed out.", Level::Notice),
             'and the developer is told why they were signed out',
+        );
+    }
+
+    public function testSignedInPersonaIsTheRosterPersona(): void
+    {
+        $signIn = $this->signIn();
+        self::assertNull($signIn->signedInPersona(), 'a guest has no persona');
+
+        $signIn->signInAs($this->editor());
+
+        self::assertSame($this->editor(), $signIn->signedInPersona(), 'the roster\'s own Persona, so the picker and banner show its details');
+    }
+
+    public function testSignedInPersonaForgetsAPersonaNoLongerInTheRoster(): void
+    {
+        $this->session->put('guild_dev_tools_persona', 'ghost');
+
+        self::assertNull($this->signIn()->signedInPersona(), 'a key the roster no longer has is a guest');
+        self::assertNull($this->session->get('guild_dev_tools_persona'), 'the stale key is cleared');
+        self::assertCount(1, $this->log->getRecords(), 'one notice');
+        self::assertTrue(
+            $this->log->hasRecord("Persona 'ghost' is no longer in config/personas.php; the session was signed out.", Level::Notice),
+            'naming the persona that went missing',
         );
     }
 
