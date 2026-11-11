@@ -45,15 +45,20 @@ final class PersonaGroupDirectoryTest extends GroupDirectoryContract
     public function testTheOutageToggleMakesEveryoneUnavailable(): void
     {
         $outage = new DirectoryOutage(new ArraySessionStore());
-        $directory = new PersonaGroupDirectory(self::rosterWith('persona-editor', 'iu:x', 'X Editors'), $outage);
+        $directory = new PersonaGroupDirectory(new PersonaRoster([
+            new Persona('editor', username: 'persona-editor', name: 'Erin Editor', groups: [new PersonaGroup('iu:x', 'X Editors')]),
+            new Persona('newcomer', username: 'persona-newcomer', name: 'Nico Newcomer'),
+        ]), $outage);
 
         $outage->turnOn();
-        $during = $directory->groupsFor('persona-editor');
+        $editorDuring = $directory->groupsFor('persona-editor');
+        $newcomerDuring = $directory->groupsFor('persona-newcomer');
         $outage->turnOff();
         $after = $directory->groupsFor('persona-editor');
 
-        self::assertInstanceOf(GrouperUnavailable::class, $during, 'with the toggle on, Grouper is down for everyone');
-        self::assertSame("persona sign-in's directory outage toggle is on", $during->reason, 'and the reason names the toggle');
+        self::assertInstanceOf(GrouperUnavailable::class, $editorDuring, 'with the toggle on, Grouper is down for a persona with groups');
+        self::assertInstanceOf(GrouperUnavailable::class, $newcomerDuring, 'and for one without');
+        self::assertSame("persona sign-in's directory outage toggle is on", $editorDuring->reason, 'and the reason names the toggle');
         self::assertInstanceOf(GroupMembership::class, $after, 'turning it off brings Grouper back');
     }
 

@@ -53,7 +53,20 @@ final class PersonaSignInExtensionTest extends TestCase
      * @param  array<string, string>  $environment
      */
     #[DataProvider('disabled')]
-    public function testWithTheFlagUnsetNoSlotIsClaimed(array $environment): void
+    public function testWithTheFlagOffNoSlotIsClaimed(array $environment): void
+    {
+        $slots = self::configure($environment)->create()->claimedSlots;
+
+        self::assertNull($slots->signInMethod, 'the app signs people in as it would without dev-tools');
+        self::assertNull($slots->groupDirectory, 'groups come from Grouper');
+        self::assertNull($slots->systemAdminGroup, 'and the System Admin label from the app\'s own configuration');
+    }
+
+    /**
+     * @param  array<string, string>  $environment
+     */
+    #[DataProvider('disabled')]
+    public function testWithTheFlagOffIuLoginSettingsAreStillRequired(array $environment): void
     {
         $builder = self::configure($environment);
 
@@ -208,7 +221,7 @@ final class PersonaSignInExtensionTest extends TestCase
         self::assertInstanceOf(PersonaGrantSeeder::class, $app->get(PersonaGrantSeeder::class), 'and the seeder is ready for the picker and the test kit');
     }
 
-    public function testAnOverriddenRosterReachesEveryService(): void
+    public function testAnOverriddenRosterReachesSignInAndTheDirectory(): void
     {
         $app = self::configure(self::ENABLED)
             ->addIlluminateDatabase()

@@ -47,7 +47,7 @@ final class PersonaSignInAcceptanceTest extends TestCase
         self::assertSame(200, $editor->getStatusCode(), 'the editor holds the seeded grant');
         self::assertSame('documents', (string) $editor->getBody(), 'and sees the page');
 
-        self::assertSame(403, $this->visit('http://localhost/documents', 'viewer')->getStatusCode(), 'a persona in no group is refused');
+        self::assertSame(403, $this->visit('http://localhost/documents', 'newcomer')->getStatusCode(), 'a persona in no group is refused');
         self::assertSame(503, $this->visit('http://localhost/documents', 'outage')->getStatusCode(), 'a persona Grouper cannot answer for gets 503');
         self::assertSame(200, $this->visit('http://localhost/framework/authorization', 'admin')->getStatusCode(), 'the roster\'s System Admin group opens the administration pages');
         self::assertSame(403, $this->visit('http://localhost/framework/authorization', 'editor')->getStatusCode(), 'which are closed to everyone else');

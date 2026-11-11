@@ -79,8 +79,18 @@ final class PersonaGrantSeederTest extends TestCase
     {
         self::seeder()->seed();
         $editor = Role::query()->where('name', 'Editor')->firstOrFail();
-        $this->db->table('framework_role_permissions')->insert(['role_id' => $editor->id, 'name' => 'documents.edit', 'active' => true, 'created_by' => 'jdoe']);
-        $this->db->table('framework_roles')->insert(['name' => 'Reviewer', 'active' => true, 'created_by' => 'jdoe']);
+        // Written through the models, as the administration pages write them.
+        $permission = new RolePermission();
+        $permission->role_id = $editor->id;
+        $permission->name = 'documents.edit';
+        $permission->active = true;
+        $permission->created_by = 'jdoe';
+        $permission->save();
+        $reviewer = new Role();
+        $reviewer->name = 'Reviewer';
+        $reviewer->active = true;
+        $reviewer->created_by = 'jdoe';
+        $reviewer->save();
 
         self::seeder()->seed();
 
