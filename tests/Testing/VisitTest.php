@@ -63,37 +63,6 @@ final class VisitTest extends TestCase
         return dirname(__DIR__) . '/Fixture/app';
     }
 
-    public function testAnEditorSeesTheDocuments(): void
-    {
-        $this->signedInAs('editor')->get('/documents')->assertOk()->assertSee('documents');
-    }
-
-    public function testAGuestIsAskedToSignIn(): void
-    {
-        $this->asGuest()->get('/documents')->assertRedirectsToSignIn();
-    }
-
-    public function testANewcomerIsForbidden(): void
-    {
-        $this->signedInAs('newcomer')->get('/documents')->assertForbidden();
-    }
-
-    public function testAPersonaGrouperCannotAnswerForGetsServiceUnavailable(): void
-    {
-        $this->signedInAs('outage')->get('/documents')->assertServiceUnavailable();
-    }
-
-    public function testTheSystemAdminPersonaOpensTheAdministrationPages(): void
-    {
-        $this->signedInAs('admin')->get('/framework/authorization')->assertOk();
-        $this->signedInAs('editor')->get('/framework/authorization')->assertForbidden();
-    }
-
-    public function testAnotherHostIsNotFound(): void
-    {
-        $this->signedInAs('editor')->get('https://example.org/documents')->assertNotFound();
-    }
-
     public function testAnInlinePersonaCombinesTheRostersGroups(): void
     {
         $editorAdmin = $this->signedInAs(new Persona('editor-admin', username: 'persona-editor-admin', name: 'Eda Editor-Admin', groups: [

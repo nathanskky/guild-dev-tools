@@ -28,8 +28,8 @@ The package has Composer type `guild-extension`, so `guild/framework` finds it w
 
 ## Turning it on
 
-Set `PERSONA_SIGN_IN_ENABLED=true` in the environment. Any other value, or none, leaves the application
-signing in through IU Login.
+Set `PERSONA_SIGN_IN_ENABLED=true` (or `1`) in the environment. Any other value, or none, leaves the
+application signing in through IU Login.
 
 While it is on, the application:
 
@@ -84,11 +84,100 @@ the rest limit what it can do where it does run:
 | Layer | What it does |
 |---|---|
 | Absent from production | Installed with `require-dev`, so a `--no-dev` build does not contain it |
-| Off unless chosen | Inactive unless `PERSONA_SIGN_IN_ENABLED=true` |
+| Off unless chosen | Inactive unless `PERSONA_SIGN_IN_ENABLED` is `true` or `1` |
 | Refuses real credentials | Boot fails if `OIDC_CLIENT_SECRET` or `GROUPER_PASSWORD` is set while it is on |
 | Local hosts only | Signing in answers 404 unless the request's host is `localhost`, `127.0.0.1` or `::1`, so an app reached under a real host name never offers it. The host comes from the client's `Host` header, so this is no defence against a crafted request |
 | Session hygiene | The session ID and CSRF token are replaced on every switch and sign-out |
 | Audited | Every switch and sign-out is logged at `notice` with the persona's key |
+
+## Testing as a persona
+
+A feature test signs in as a persona in one call and asserts on the response, through the application's
+real router, Gate and grants:
+
+```php
+use Guild\DevTools\Testing\VisitsApplication;
+use PHPUnit\Framework\TestCase;
+
+final class ExamplePageTest extends TestCase
+{
+    use VisitsApplication;
+
+    public function testEditorsSeeTheExample(): void
+    {
+        $this->signedInAs('editor')->get('/')->assertOk()->assertSee('Example');
+    }
+
+    public function testGuestsAreAskedToSignIn(): void
+    {
+        $this->asGuest()->get('/')->assertRedirectsToSignIn();
+    }
+
+    public function testNewcomersAreForbidden(): void
+    {
+        $this->signedInAs('newcomer')->get('/')->assertForbidden();
+    }
+
+    public function testAGrouperOutageIsReported(): void
+    {
+        $this->signedInAs('editor')->duringDirectoryOutage()->get('/')->assertServiceUnavailable();
+    }
+}
+```
+
+`phpunit.xml.dist` turns persona sign-in on and blanks the real secrets. `force="true"` matters: without it,
+a variable already set in the environment (inside a container started for real IU Login, say) wins, and
+persona sign-in either stays off or refuses to start.
+
+```xml
+<php>
+    <env name="PERSONA_SIGN_IN_ENABLED" value="true" force="true"/>
+    <env name="OIDC_CLIENT_SECRET" value="" force="true"/>
+    <env name="GROUPER_PASSWORD" value="" force="true"/>
+</php>
+```
+
+Each request a visit makes loads the application from `config/app.php`, as a real request would, and swaps in:
+
+- the visit's own session, in memory, which carries across the visit's requests
+- an in-memory SQLite database, built once per PHPUnit run by the framework's migrations
+- a logger that discards everything
+- the request itself
+
+The roster's grants are seeded before each request. Each test runs in a database transaction that is rolled
+back after it, including rows written in `setUp()`. Only the framework's tables exist; the application's own
+migrations are not run yet.
+
+### Visits
+
+- `signedInAs('editor')` takes a key from `config/personas.php`. A key that is not there fails the test with
+  a message saying so.
+- `signedInAs(new Persona(...))` takes a persona built for one test. It joins the roster's personas, grants
+  and System Admin group for that visit.
+- `asGuest()` is a visitor who has not signed in.
+- `get()`, `post()`, `put()` and `delete()` send a request. A path is sent to `http://localhost`; an absolute
+  URL visits another host. The write methods fill in the session's CSRF token unless the data has a `_csrf`
+  entry.
+- `withHeaders([...])` returns a visitor who sends those headers with every request.
+- `duringDirectoryOutage()` returns a visitor for whom Grouper is down.
+
+Methods that return a visitor return a copy with a copy of the session, and the original is unchanged. So
+`duringDirectoryOutage()` after a successful request still has that request's cached membership, and is
+answered from it within the membership TTL, as in production. To test the 503 page, start the outage before
+the first request.
+
+An exception the application does not handle fails the test with that exception; it is not turned into a 500.
+
+### Assertions
+
+`assertOk()`, `assertForbidden()`, `assertNotFound()`, `assertServiceUnavailable()`, `assertRedirect($to)`,
+`assertRedirectsToSignIn()`, `assertSee($text)` and `assertDontSee($text)`. Each returns the response, so they
+chain. `assertSee()` compares against the page as a reader sees it, with HTML entities decoded. A failure
+names the actual status, the redirect target and the start of the body. `status()`, `header()` and `body()`
+give the raw values.
+
+The application is found through the Composer root package. Override `applicationBasePath()` in the test case
+to visit another one.
 
 ## Contributing
 

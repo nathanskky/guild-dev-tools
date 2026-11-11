@@ -29,7 +29,13 @@ deprecations fail the run. Test classes live under `Guild\DevTools\Test\`.
 
 **No PHPUnit mocks.** The doubles are the framework's `Testing\ArraySessionStore`, `Testing\FrameworkSchema`
 (the real migrations on in-memory SQLite) and `Testing\GroupDirectoryContract`, plus Monolog's `TestHandler`.
-`tests/Fixture/app` is a small application booted by the extension and acceptance tests.
+`tests/Fixture/app` is a small application whose `config/app.php` discovers this package as an extension; the
+acceptance test and `tests/Testing` visit it with this package's own test kit. `tests/Fixture/persona-off` is
+an IU Login application with persona sign-in off, and `tests/Fixture/not-an-app` a broken `config/app.php`.
+
+`phpunit.xml.dist` forces `PERSONA_SIGN_IN_ENABLED` on and both secrets blank for every test, as an
+application's would. Tests of the extension itself pass their environment to `PersonaSignInExtension`
+explicitly.
 
 ## Layout
 
@@ -40,6 +46,8 @@ deprecations fail the run. Test classes live under `Guild\DevTools\Test\`.
 - `SignIn\` — `PersonaSignIn` (the `SignInMethod`), `PersonaGroupDirectory` (the `GroupDirectory`),
   and their session state `SignedInPersona` and `DirectoryOutage`; `LocalHost`
 - `Grant\` — `PersonaGrantSeeder`
+- `Testing\` — the test kit: `VisitsApplication` (trait for test cases), `Visit`, `VisitResponse` (API), and
+  `ApplicationUnderTest`, `TestDatabase` (internal)
 
 ## Conventions
 
@@ -57,6 +65,17 @@ deprecations fail the run. Test classes live under `Guild\DevTools\Test\`.
   backslashes before `PersonaSignIn` sees them; `returnTarget()` refuses both anyway.
 - **Claimed classes must be bound in `boot()`.** The framework checks at `create()` that the container can
   build each chosen class, and builds nothing there, so a test can still override `SessionStore` afterwards.
+
+- **PHPUnit writes `<env value="true">` as `1`.** Any spelling of `true` in `phpunit.xml` reaches PHP as `'1'`,
+  so the extension accepts `1` as well as `true`.
+- **The test kit loads the application once per request**, not once per visit, so nothing one request
+  resolved leaks into the next. Only the session (per visit) and the database (per test) carry over.
+- **The test kit has no clock.** The framework passes `time(...)` to `MembershipProvider`, and each visit
+  starts with an empty session, so the membership TTL never expires inside a test.
+- **The test kit reads persona mode from the framework's claimed sign-in slot.** Resolving `SignInMethod`
+  instead would build `PersonaSignIn` with the roster before an inline persona joins it.
+- **PHPStan does not analyse `VisitsApplication`**, because only tests use it (`trait.unused` is ignored in
+  `phpstan.neon`). Keep the trait to one-line delegations.
 
 ## Branching and releases
 
