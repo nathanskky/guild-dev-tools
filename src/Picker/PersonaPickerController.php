@@ -48,11 +48,12 @@ final readonly class PersonaPickerController
     {
         $this->seeder->seed();
 
-        $stored = $this->signedIn->storedValue();
+        // Reading the persona first lets this request notice a missing one too.
         $current = $this->signIn->signedInPersona();
-        $notice = $current === null && $stored !== null
-            ? sprintf("Persona '%s' no longer exists in config/personas.php. You are signed out.", $stored)
-            : null;
+        $missing = $this->signedIn->takeMissing();
+        $notice = $missing === null
+            ? null
+            : sprintf("Persona '%s' no longer exists in config/personas.php. You are signed out.", $missing);
 
         $return = $request->getQueryParams()['return'] ?? null;
 

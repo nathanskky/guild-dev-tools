@@ -42,6 +42,12 @@ final class ReturnPathTest extends TestCase
         yield 'the picker' => ['/_dev/personas'];
         yield 'the picker with a query' => ['/_dev/personas?return=%2F'];
         yield 'under the picker' => ['/_dev/personas/outage'];
+        yield 'a tab browsers strip before parsing' => ["/\t/evil.example"];
+        yield 'a tab before a backslash' => ["/\t\\evil.example"];
+        yield 'a newline' => ["/\n/evil.example"];
+        yield 'a carriage return' => ["/documents\r\nX-Injected: 1"];
+        yield 'a space' => ['/ /evil.example'];
+        yield 'a NUL byte' => ["/documents\0"];
     }
 
     #[DataProvider('targetsThatReturnToTheRoot')]

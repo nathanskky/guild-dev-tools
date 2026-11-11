@@ -19,11 +19,14 @@ final class ReturnPath
     /**
      * $candidate when it is a path on this site outside the picker, else '/'.
      * A path must start with a single '/': '//host' and '/\host' are
-     * resolved by browsers to another site.
+     * resolved by browsers to another site. It may hold no whitespace or
+     * control character: browsers strip tabs and newlines before parsing, so
+     * '/<tab>/host' is '//host' to them, and a newline cannot go in a header.
      */
     public static function from(?string $candidate): string
     {
         if ($candidate === null
+            || preg_match('/[\x00-\x20\x7F]/', $candidate) === 1
             || ! str_starts_with($candidate, '/')
             || str_starts_with($candidate, '//')
             || str_starts_with($candidate, '/\\')

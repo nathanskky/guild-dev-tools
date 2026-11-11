@@ -58,7 +58,7 @@ final readonly class PersonaSignIn implements SignInMethod
         $stored = $this->signedIn->storedValue();
 
         if ($stored !== null) {
-            $this->signedIn->forget();
+            $this->signedIn->forgetMissing($stored);
             $this->logger->notice(sprintf(
                 "Persona '%s' is no longer in config/personas.php; the session was signed out.",
                 $stored,

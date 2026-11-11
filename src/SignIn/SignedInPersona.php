@@ -17,6 +17,8 @@ final readonly class SignedInPersona
 {
     private const string KEY = 'guild_dev_tools_persona';
 
+    private const string MISSING_KEY = 'guild_dev_tools_persona_missing';
+
     public function __construct(private SessionStore $session)
     {
     }
@@ -52,6 +54,29 @@ final readonly class SignedInPersona
     public function remember(PersonaKey $key): void
     {
         $this->session->put(self::KEY, $key->value);
+        $this->session->forget(self::MISSING_KEY);
+    }
+
+    /**
+     * Sign out a persona the roster no longer has, keeping its key until the
+     * picker says so: whichever page noticed first redirects or renders before
+     * the picker loads.
+     */
+    public function forgetMissing(string $storedValue): void
+    {
+        $this->forget();
+        $this->session->put(self::MISSING_KEY, $storedValue);
+    }
+
+    /**
+     * The key forgetMissing() kept, once; null after that, or if none went missing.
+     */
+    public function takeMissing(): ?string
+    {
+        $value = $this->session->get(self::MISSING_KEY);
+        $this->session->forget(self::MISSING_KEY);
+
+        return is_string($value) ? $value : null;
     }
 
     public function forget(): void

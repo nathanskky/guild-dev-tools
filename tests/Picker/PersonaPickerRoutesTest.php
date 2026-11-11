@@ -59,6 +59,8 @@ final class PersonaPickerRoutesTest extends TestCase
         yield 'protocol-relative' => ['//evil.example'];
         yield 'absolute URL' => ['https://evil.example'];
         yield 'backslash' => ['/\\evil.example'];
+        yield 'a tab browsers strip' => ["/\t/evil.example"];
+        yield 'a newline' => ["/\n/evil.example"];
     }
 
     #[DataProvider('returnsOffThisSite')]

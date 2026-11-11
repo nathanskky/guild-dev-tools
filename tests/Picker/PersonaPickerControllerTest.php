@@ -77,6 +77,20 @@ final class PersonaPickerControllerTest extends TestCase
         self::assertNull(new SignedInPersona($this->session)->storedValue(), 'the stale key is gone');
     }
 
+    public function testAPersonaThatWentMissingOnAnEarlierPageIsReportedOnThePicker(): void
+    {
+        $this->session->put('guild_dev_tools_persona', 'ghost');
+        $controller = $this->controller();
+
+        // The page the developer reloaded reads who is signed in first, as RequireSignIn or the banner does.
+        self::assertNull($this->signIn()->read(), 'the stale persona reads as a guest');
+        $first = html_entity_decode((string) $controller->show(self::request('GET', '/_dev/personas'))->getBody(), ENT_QUOTES | ENT_HTML5);
+        $second = html_entity_decode((string) $controller->show(self::request('GET', '/_dev/personas'))->getBody(), ENT_QUOTES | ENT_HTML5);
+
+        self::assertStringContainsString("Persona 'ghost' no longer exists in config/personas.php. You are signed out.", $first, 'the picker says why');
+        self::assertStringNotContainsString('no longer exists', $second, 'once');
+    }
+
     public function testASignedInPersonaIsNotReportedMissing(): void
     {
         new SignedInPersona($this->session)->remember(new PersonaKey(FixtureRoster::EDITOR));
@@ -153,6 +167,13 @@ final class PersonaPickerControllerTest extends TestCase
 
         self::assertSame(422, $response->getStatusCode(), 'a form without a persona is refused');
         self::assertStringContainsString("No persona '' in config/personas.php.", html_entity_decode((string) $response->getBody(), ENT_QUOTES | ENT_HTML5), 'and says so');
+    }
+
+    private function signIn(): PersonaSignIn
+    {
+        $roster = self::roster();
+
+        return new PersonaSignIn($roster, new SignedInPersona($this->session), $this->session, new Csrf($this->session), new Logger('test', [$this->log]));
     }
 
     private function controller(): PersonaPickerController

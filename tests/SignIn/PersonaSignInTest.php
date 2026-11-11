@@ -111,6 +111,28 @@ final class PersonaSignInTest extends TestCase
         );
     }
 
+    public function testAMissingPersonaIsRememberedOnceForThePicker(): void
+    {
+        $this->session->put('guild_dev_tools_persona', 'ghost');
+        $signedIn = new SignedInPersona($this->session);
+
+        $this->signIn()->read();
+
+        self::assertSame('ghost', $signedIn->takeMissing(), 'the picker can say which persona went missing');
+        self::assertNull($signedIn->takeMissing(), 'and says it once');
+    }
+
+    public function testSigningInForgetsAMissingPersona(): void
+    {
+        $this->session->put('guild_dev_tools_persona', 'ghost');
+        $signIn = $this->signIn();
+        $signIn->read();
+
+        $signIn->signInAs($this->editor());
+
+        self::assertNull(new SignedInPersona($this->session)->takeMissing(), 'a persona chosen since is not reported as missing');
+    }
+
     public function testAnInvalidStoredKeyReadsAsAGuest(): void
     {
         $this->session->put('guild_dev_tools_persona', 'Not A Key');
