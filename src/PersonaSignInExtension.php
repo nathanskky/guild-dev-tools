@@ -46,11 +46,11 @@ final class PersonaSignInExtension implements ApplicationExtension
     private ?PersonaRoster $roster = null;
 
     /**
-     * @param  array<string, string>|null  $environment  Null reads the process environment and $_ENV.
+     * @param  array<string, string>|null  $environment  Null reads the process environment and $_ENV (mergeEnvironment()).
      */
     public function __construct(?array $environment = null)
     {
-        $this->environment = $environment ?? self::processEnvironment();
+        $this->environment = $environment ?? self::mergeEnvironment(getenv(), $_ENV);
     }
 
     #[Override]
@@ -82,21 +82,25 @@ final class PersonaSignInExtension implements ApplicationExtension
             return;
         }
 
+        // Every factory resolves the roster, so a test that overrides it reaches all of them.
         $app->addShared(PersonaRoster::class, $roster);
         $app->addShared(SignedInPersona::class, static fn (): SignedInPersona => new SignedInPersona(self::service($app, SessionStore::class)));
         $app->addShared(DirectoryOutage::class, static fn (): DirectoryOutage => new DirectoryOutage(self::service($app, SessionStore::class)));
         $app->addShared(PersonaSignIn::class, static fn (): PersonaSignIn => new PersonaSignIn(
-            $roster,
+            self::service($app, PersonaRoster::class),
             self::service($app, SignedInPersona::class),
             self::service($app, SessionStore::class),
             self::service($app, Csrf::class),
             self::service($app, LoggerInterface::class),
         ));
         $app->addShared(PersonaGroupDirectory::class, static fn (): PersonaGroupDirectory => new PersonaGroupDirectory(
-            $roster,
+            self::service($app, PersonaRoster::class),
             self::service($app, DirectoryOutage::class),
         ));
-        $app->addShared(PersonaGrantSeeder::class, static fn (): PersonaGrantSeeder => new PersonaGrantSeeder($roster));
+        $app->addShared(
+            PersonaGrantSeeder::class,
+            static fn (): PersonaGrantSeeder => new PersonaGrantSeeder(self::service($app, PersonaRoster::class)),
+        );
     }
 
     private function refuseRealCredentials(): void
@@ -156,20 +160,35 @@ final class PersonaSignInExtension implements ApplicationExtension
     }
 
     /**
-     * Real environment variables, then $_ENV, where PHPUnit's <env> also writes.
+     * The process environment over $_ENV, where PHPUnit's <env> also writes.
+     * For the flag the process wins, so a start script's choice stands. For a
+     * credential, a non-blank value in either source counts, because the
+     * application may read the one this check would otherwise not see.
      *
+     * @param  array<mixed>  $process  As getenv() returns it.
+     * @param  array<mixed>  $env  As $_ENV holds it.
      * @return array<string, string>
      */
-    private static function processEnvironment(): array
+    public static function mergeEnvironment(array $process, array $env): array
     {
-        $environment = getenv();
+        $merged = [];
 
-        foreach ($_ENV as $name => $value) {
-            if (is_string($name) && is_string($value)) {
-                $environment[$name] ??= $value;
+        foreach ([$env, $process] as $source) {
+            foreach ($source as $name => $value) {
+                if (is_string($name) && is_string($value)) {
+                    $merged[$name] = $value;
+                }
             }
         }
 
-        return $environment;
+        foreach (array_keys(self::CREDENTIALS) as $credential) {
+            $fromEnv = $env[$credential] ?? null;
+
+            if (is_string($fromEnv) && trim($fromEnv) !== '' && trim($merged[$credential] ?? '') === '') {
+                $merged[$credential] = $fromEnv;
+            }
+        }
+
+        return $merged;
     }
 }

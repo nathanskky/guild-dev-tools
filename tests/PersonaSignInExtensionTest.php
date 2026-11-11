@@ -22,6 +22,9 @@ use Guild\Framework\Authentication\SignInMethod;
 use Guild\Framework\Authorization\IdentitySource;
 use Guild\Framework\Authorization\Membership\GroupDirectory;
 use Guild\Framework\Exception\ConfigurationException;
+use Guild\Framework\Session\SessionStore;
+use Guild\Framework\Testing\ArraySessionStore;
+use Guild\Grouper\GroupMembership;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -39,6 +42,7 @@ use Psr\Log\NullLogger;
 #[UsesClass(SignedInPersona::class)]
 #[UsesClass(DirectoryOutage::class)]
 #[UsesClass(PersonaGrantSeeder::class)]
+#[UsesClass(ArraySessionStore::class)]
 final class PersonaSignInExtensionTest extends TestCase
 {
     private const string FIXTURE = __DIR__ . '/Fixture/app';
@@ -109,20 +113,35 @@ final class PersonaSignInExtensionTest extends TestCase
         self::assertInstanceOf(PersonaSignIn::class, $app->get(SignInMethod::class), 'TRUE turns it on as true does');
     }
 
-    public function testTheEnvSuperglobalIsRead(): void
+    public function testTheEnvSuperglobalCounts(): void
     {
-        $_ENV['PERSONA_SIGN_IN_ENABLED'] = 'true';
+        self::assertSame(
+            'true',
+            PersonaSignInExtension::mergeEnvironment([], ['PERSONA_SIGN_IN_ENABLED' => 'true'])['PERSONA_SIGN_IN_ENABLED'] ?? null,
+            'PHPUnit\'s <env> sets $_ENV, and that counts',
+        );
+    }
 
-        try {
-            $app = Application::configure(self::FIXTURE, [new PersonaSignInExtension()])
-                ->withLogger(new NullLogger())
-                ->addAuthentication()
-                ->create();
-        } finally {
-            unset($_ENV['PERSONA_SIGN_IN_ENABLED']);
-        }
+    public function testTheProcessEnvironmentWinsForTheFlag(): void
+    {
+        self::assertSame(
+            'false',
+            PersonaSignInExtension::mergeEnvironment(['PERSONA_SIGN_IN_ENABLED' => 'false'], ['PERSONA_SIGN_IN_ENABLED' => 'true'])['PERSONA_SIGN_IN_ENABLED'] ?? null,
+            'a start script\'s choice is not overridden by $_ENV',
+        );
+    }
 
-        self::assertInstanceOf(PersonaSignIn::class, $app->get(SignInMethod::class), 'PHPUnit\'s <env> sets $_ENV, and that counts');
+    public function testASecretInEitherSourceStopsBoot(): void
+    {
+        $environment = PersonaSignInExtension::mergeEnvironment(
+            self::ENABLED + ['OIDC_CLIENT_SECRET' => ''],
+            ['OIDC_CLIENT_SECRET' => 'secret'],
+        );
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Persona sign-in is enabled, but OIDC_CLIENT_SECRET is set.');
+
+        Application::configure(self::FIXTURE, [new PersonaSignInExtension($environment)]);
     }
 
     public function testAMissingRosterFileStopsBoot(): void
@@ -187,6 +206,29 @@ final class PersonaSignInExtensionTest extends TestCase
         self::assertInstanceOf(PersonaSignIn::class, $app->get(SignInMethod::class), 'people sign in as personas');
         self::assertInstanceOf(PersonaGroupDirectory::class, $app->get(GroupDirectory::class), 'and their groups come from the roster');
         self::assertInstanceOf(PersonaGrantSeeder::class, $app->get(PersonaGrantSeeder::class), 'and the seeder is ready for the picker and the test kit');
+    }
+
+    public function testAnOverriddenRosterReachesEveryService(): void
+    {
+        $app = self::configure(self::ENABLED)
+            ->addIlluminateDatabase()
+            ->addAuthentication()
+            ->addAuthorization(IdentitySource::Oidc, FixturePermission::class)
+            ->create();
+        $inline = new Persona('inline', username: 'persona-inline', name: 'Ines Inline', groups: [new PersonaGroup('iu:inline', 'Inline')]);
+        $app->addShared(PersonaRoster::class, new PersonaRoster([$inline]), overwrite: true);
+        $app->addShared(SessionStore::class, new ArraySessionStore(), overwrite: true);
+
+        $signIn = $app->get(SignInMethod::class);
+        self::assertInstanceOf(PersonaSignIn::class, $signIn);
+        $signIn->signInAs($inline);
+        $directory = $app->get(GroupDirectory::class);
+        self::assertInstanceOf(GroupDirectory::class, $directory);
+        $membership = $directory->groupsFor('persona-inline');
+
+        self::assertSame('persona-inline', $signIn->read()?->username, 'a test kit can sign in as a one-off persona');
+        self::assertInstanceOf(GroupMembership::class, $membership);
+        self::assertCount(1, $membership->groups, 'and the directory knows its groups');
     }
 
     /**

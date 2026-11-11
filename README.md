@@ -78,14 +78,15 @@ A roster that breaks a rule fails at boot with a message naming the persona or g
 
 ## Safety
 
-Persona sign-in lets anyone become anyone. Each of these is enough on its own to keep it out of production:
+Persona sign-in lets anyone become anyone. The first three layers each keep it out of production on their own;
+the rest limit what it can do where it does run:
 
 | Layer | What it does |
 |---|---|
 | Absent from production | Installed with `require-dev`, so a `--no-dev` build does not contain it |
 | Off unless chosen | Inactive unless `PERSONA_SIGN_IN_ENABLED=true` |
 | Refuses real credentials | Boot fails if `OIDC_CLIENT_SECRET` or `GROUPER_PASSWORD` is set while it is on |
-| Local hosts only | Signing in answers 404 unless the request's host is `localhost`, `127.0.0.1` or `::1` |
+| Local hosts only | Signing in answers 404 unless the request's host is `localhost`, `127.0.0.1` or `::1`, so an app reached under a real host name never offers it. The host comes from the client's `Host` header, so this is no defence against a crafted request |
 | Session hygiene | The session ID and CSRF token are replaced on every switch and sign-out |
 | Audited | Every switch and sign-out is logged at `notice` with the persona's key |
 

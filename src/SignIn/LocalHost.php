@@ -8,8 +8,9 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Whether a request was addressed to this machine. Persona sign-in answers
- * nothing else, as a last line of defence should it ever be reachable from
- * a real host name.
+ * nothing else, so an application reached under a real host name never offers
+ * it. The host comes from the client's Host header, so this stops accidents,
+ * not a crafted request; keeping dev-tools out of production builds does that.
  *
  * @internal
  */
