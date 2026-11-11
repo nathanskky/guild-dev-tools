@@ -9,8 +9,10 @@ Guidance for AI coding agents (and new humans) working in this repository.
 discovers it and calls `PersonaSignInExtension`. Read `README.md` for what it does from an application's side.
 
 - **PHP:** `~8.5.0`
-- **Remote:** `https://github.com/nathanskky/guild-dev-tools.git`
-- **Default branch:** `develop`. Not released yet.
+- **Remote:** `git@github.com:nathanskky/guild-dev-tools.git` (SSH), or
+  `https://github.com/nathanskky/guild-dev-tools.git` if you don't have SSH keys set up
+- **Current release:** `1.0.0`
+- **Default branch:** `develop`. Work targets `develop`; see [Branching and releases](#branching-and-releases).
 - **`composer.lock` is gitignored** here, so there is no lock to keep in sync.
 - **Requires `guild/framework` `^2.1`.** dev-tools majors track framework majors.
 
