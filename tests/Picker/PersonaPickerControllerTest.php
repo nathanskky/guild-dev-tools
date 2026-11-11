@@ -116,6 +116,45 @@ final class PersonaPickerControllerTest extends TestCase
         self::assertStringContainsString('name="return" value="/documents"', $body, 'the page the visitor wanted');
     }
 
+    public function testTheOutageToggleIsLogged(): void
+    {
+        $this->controller()->setOutage(self::request('POST', '/_dev/personas/outage', ['outage' => 'on']));
+        $this->controller()->setOutage(self::request('POST', '/_dev/personas/outage', ['outage' => 'off']));
+
+        self::assertTrue($this->log->hasNoticeThatContains('Directory outage simulation turned on.'), 'starting an outage is logged');
+        self::assertTrue($this->log->hasNoticeThatContains('Directory outage simulation turned off.'), 'and so is ending it');
+    }
+
+    public function testSigningInIsLogged(): void
+    {
+        $this->controller()->signIn(self::request('POST', '/_dev/personas', ['persona' => FixtureRoster::EDITOR]));
+
+        self::assertTrue(
+            $this->log->hasNoticeThatContains(sprintf("Signed in as persona '%s' (%s).", FixtureRoster::EDITOR, FixtureRoster::EDITOR_USERNAME)),
+            'every switch from the picker is logged with key and username',
+        );
+    }
+
+    public function testALongInvalidPersonaValueIsShownShortened(): void
+    {
+        $value = str_repeat('Not a key ', 20);
+
+        $response = $this->controller()->signIn(self::request('POST', '/_dev/personas', ['persona' => $value]));
+        $body = html_entity_decode((string) $response->getBody(), ENT_QUOTES | ENT_HTML5);
+
+        self::assertSame(422, $response->getStatusCode(), 'an invalid key is refused');
+        self::assertStringContainsString(sprintf("No persona '%s' in config/personas.php.", substr($value, 0, 40)), $body, 'naming what was sent, cut to a key\'s length');
+        self::assertStringNotContainsString($value, $body, 'not all of it');
+    }
+
+    public function testAMissingPersonaFieldIsRejected(): void
+    {
+        $response = $this->controller()->signIn(self::request('POST', '/_dev/personas', []));
+
+        self::assertSame(422, $response->getStatusCode(), 'a form without a persona is refused');
+        self::assertStringContainsString("No persona '' in config/personas.php.", html_entity_decode((string) $response->getBody(), ENT_QUOTES | ENT_HTML5), 'and says so');
+    }
+
     private function controller(): PersonaPickerController
     {
         $roster = self::roster();
@@ -124,11 +163,13 @@ final class PersonaPickerControllerTest extends TestCase
         $logger = new Logger('test', [$this->log]);
 
         return new PersonaPickerController(
+            $roster,
             $signedIn,
             new PersonaSignIn($roster, $signedIn, $this->session, $csrf, $logger),
             new DirectoryOutage($this->session),
             new PersonaGrantSeeder($roster),
             new PersonaPickerPage($roster, $csrf),
+            $logger,
         );
     }
 

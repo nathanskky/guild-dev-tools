@@ -113,11 +113,13 @@ final class PersonaSignInExtension implements ApplicationExtension
             self::service($app, Csrf::class),
         ));
         $app->addShared(PersonaPickerController::class, static fn (): PersonaPickerController => new PersonaPickerController(
+            self::service($app, PersonaRoster::class),
             self::service($app, SignedInPersona::class),
             self::service($app, PersonaSignIn::class),
             self::service($app, DirectoryOutage::class),
             self::service($app, PersonaGrantSeeder::class),
             self::service($app, PersonaPickerPage::class),
+            self::service($app, LoggerInterface::class),
         ));
 
         self::mountPicker(self::service($app, Router::class));
@@ -131,6 +133,8 @@ final class PersonaSignInExtension implements ApplicationExtension
     {
         $router->group(PersonaSignIn::PICKER_PATH, static function (RouteGroup $group): void {
             $group->map('GET', '/', [PersonaPickerController::class, 'show']);
+            $group->map('POST', '/', [PersonaPickerController::class, 'signIn']);
+            $group->map('POST', '/outage', [PersonaPickerController::class, 'setOutage']);
         })
             ->lazyMiddleware(RequireLocalHost::class)
             ->lazyMiddleware(VerifyCsrfToken::class);

@@ -88,6 +88,14 @@ you can see what it should be able to do before choosing. `System Admin` marks t
 System Admin group, and `Grouper unavailable` one with `DirectoryStatus::Unavailable`. `Continue as a guest`
 signs out.
 
+Choosing a persona signs you in with a new session ID and CSRF token, logs the switch, and takes you back to
+the page you were going to, when it is a page of this site; otherwise to `/`.
+
+`Simulate a Grouper outage` makes Grouper unavailable for your session, whoever you are signed in as.
+Membership already cached keeps answering until it expires, then stale membership is served, then pages that
+need it give 503, as in production. Lower `membershipTtl` in `config/authorization.php` to see this sooner.
+`End the Grouper outage` turns it off.
+
 ## Safety
 
 Persona sign-in lets anyone become anyone. The first three layers each keep it out of production on their own;
