@@ -30,12 +30,15 @@
         "php": "~8.5.0",
         "guild/framework": "^2.1",
         "guild/grouper": "^0.1.3",
-        "psr/log": "^3.0"
+        "psr/log": "^3.0",
+        "laminas/laminas-diactoros": "^3.6",
+        "psr/http-server-handler": "^1.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^13.0",
         "phpstan/phpstan": "^2.2",
-        "laravel/pint": "^1.32"
+        "laravel/pint": "^1.32",
+        "monolog/monolog": "^3.12"
     },
     "autoload": {
         "psr-4": {
