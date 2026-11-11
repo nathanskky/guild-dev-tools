@@ -126,6 +126,13 @@ final class PersonaSignInExtensionTest extends TestCase
         self::assertInstanceOf(PersonaSignIn::class, $app->get(SignInMethod::class), 'TRUE turns it on as true does');
     }
 
+    public function testOneTurnsItOnBecausePhpunitWritesTrueAsOne(): void
+    {
+        $app = self::configure(['PERSONA_SIGN_IN_ENABLED' => '1'])->addAuthentication()->create();
+
+        self::assertInstanceOf(PersonaSignIn::class, $app->get(SignInMethod::class), 'phpunit.xml\'s value="true" reaches PHP as 1');
+    }
+
     public function testTheEnvSuperglobalCounts(): void
     {
         self::assertSame(

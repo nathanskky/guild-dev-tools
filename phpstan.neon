@@ -2,3 +2,8 @@ parameters:
     level: 10
     paths:
         - src
+    ignoreErrors:
+        # Only test cases use the trait, and PHPStan analyses src/ alone; the trait only delegates.
+        -
+            identifier: trait.unused
+            path: src/Testing/VisitsApplication.php

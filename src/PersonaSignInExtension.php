@@ -21,7 +21,7 @@ use Override;
 use Psr\Log\LoggerInterface;
 
 /**
- * Turns on persona sign-in when PERSONA_SIGN_IN_ENABLED=true: people sign in
+ * Turns on persona sign-in when PERSONA_SIGN_IN_ENABLED is true (or 1): people sign in
  * as personas from config/personas.php, their groups come from the same
  * roster, and the roster names the System Admin group.
  *
@@ -56,7 +56,8 @@ final class PersonaSignInExtension implements ApplicationExtension
     #[Override]
     public function configure(ApplicationBuilder $builder): void
     {
-        if (strtolower(trim($this->environment[self::FLAG] ?? '')) !== 'true') {
+        // 1 as well as true: phpunit.xml's <env value="true"> reaches PHP as 1.
+        if (! in_array(strtolower(trim($this->environment[self::FLAG] ?? '')), ['true', '1'], true)) {
             return;
         }
 
