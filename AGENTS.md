@@ -57,7 +57,7 @@ explicitly.
   where a visitor may be sent back to
 - `Grant\` — `PersonaGrantSeeder`
 - `Picker\` — the persona picker at `/_dev/personas`: `PersonaPickerController`, `PersonaPickerPage` (its
-  markup), `RequireLocalHost`
+  markup), `RequireLocalHost`; and `PersonaBanner`, the middleware that puts the banner on every HTML page
 - `Testing\` — the test kit: `VisitsApplication` (trait for test cases), `Visit`, `VisitResponse` (API), and
   `ApplicationUnderTest`, `TestDatabase` (internal)
 
@@ -75,6 +75,9 @@ explicitly.
   may itself need someone signed in, and the framework's `AdminPage` is internal and titled "Administration".
 - **The picker's routes check the host before the CSRF token** (`RequireLocalHost`, then `VerifyCsrfToken`),
   so another host gets 404, not the expired-form page.
+- **`PersonaBanner` is prepended to the router** (`lazyPrependMiddleware()`), so it wraps the
+  `AuthorizationFailureResponder` that `addAuthorization()` added first. Appended, it would miss the 403 and
+  503 pages, where a developer most needs to switch persona.
 - **The challenge's return path relies on the PSR-7 URI.** Laminas normalises `//host` paths and encodes
   backslashes before `PersonaSignIn` sees them; `ReturnPath` refuses both anyway.
 - **Claimed classes must be bound in `boot()`.** The framework checks at `create()` that the container can

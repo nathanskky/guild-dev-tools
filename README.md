@@ -96,6 +96,16 @@ Membership already cached keeps answering until it expires, then stale membershi
 need it give 503, as in production. Lower `membershipTtl` in `config/authorization.php` to see this sooner.
 `End the Grouper outage` turns it off.
 
+## The banner
+
+Every HTML page on the local stack opens with a banner: `Persona sign-in: signed in as Erin Editor (editor)`,
+or `not signed in` for a guest, with `Switch persona`, `Sign out` and the Grouper outage control. It is there on
+the framework's 403 and 503 pages too, so a persona refused a page can switch at once. Responses that are not
+HTML, and HTML with no `<body>` tag such as an htmx fragment, are left alone.
+
+Feature tests see the banner on HTML pages, as a developer does, so `assertDontSee('Erin Editor')` on a page
+the editor visits fails because of it.
+
 ## Safety
 
 Persona sign-in lets anyone become anyone. The first three layers each keep it out of production on their own;
@@ -107,6 +117,7 @@ the rest limit what it can do where it does run:
 | Off unless chosen | Inactive unless `PERSONA_SIGN_IN_ENABLED` is `true` or `1` |
 | Refuses real credentials | Boot fails if `OIDC_CLIENT_SECRET` or `GROUPER_PASSWORD` is set while it is on |
 | Local hosts only | Signing in and the picker answer 404 unless the request's host is `localhost`, `127.0.0.1` or `::1`, so an app reached under a real host name never offers it. The host comes from the client's `Host` header, so this is no defence against a crafted request |
+| Visible | A banner on every HTML page says who you are signed in as |
 | Session hygiene | The session ID and CSRF token are replaced on every switch and sign-out |
 | Audited | Every switch and sign-out is logged at `notice` with the persona's key |
 

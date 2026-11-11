@@ -7,6 +7,7 @@ namespace Guild\DevTools;
 use Error;
 use Guild\DevTools\Grant\PersonaGrantSeeder;
 use Guild\DevTools\Persona\PersonaRoster;
+use Guild\DevTools\Picker\PersonaBanner;
 use Guild\DevTools\Picker\PersonaPickerController;
 use Guild\DevTools\Picker\PersonaPickerPage;
 use Guild\DevTools\Picker\RequireLocalHost;
@@ -122,7 +123,16 @@ final class PersonaSignInExtension implements ApplicationExtension
             self::service($app, LoggerInterface::class),
         ));
 
-        self::mountPicker(self::service($app, Router::class));
+        $app->addShared(PersonaBanner::class, static fn (): PersonaBanner => new PersonaBanner(
+            self::service($app, PersonaSignIn::class),
+            self::service($app, DirectoryOutage::class),
+            self::service($app, Csrf::class),
+        ));
+
+        $router = self::service($app, Router::class);
+        self::mountPicker($router);
+        // Prepended, so it wraps the AuthorizationFailureResponder that addAuthorization() already added.
+        $router->lazyPrependMiddleware(PersonaBanner::class);
     }
 
     /**
