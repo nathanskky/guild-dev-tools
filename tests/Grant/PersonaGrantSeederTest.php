@@ -11,6 +11,7 @@ use Guild\DevTools\Persona\PersonaKey;
 use Guild\DevTools\Persona\PersonaRoster;
 use Guild\DevTools\Persona\RoleGrant;
 use Guild\DevTools\Test\Support\FixturePermission;
+use Guild\DevTools\Test\Support\FixtureRoster;
 use Guild\Framework\Model\Group;
 use Guild\Framework\Model\Role;
 use Guild\Framework\Model\RolePermission;
@@ -29,8 +30,6 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(RoleGrant::class)]
 final class PersonaGrantSeederTest extends TestCase
 {
-    private const string EDITORS = 'iu:roles:sys:acm:starter-editors';
-
     private Connection $db;
 
     protected function setUp(): void
@@ -50,16 +49,16 @@ final class PersonaGrantSeederTest extends TestCase
     {
         self::seeder()->seed();
 
-        $group = Group::query()->where('group_identifier', self::EDITORS)->firstOrFail();
-        $role = Role::query()->where('name', 'Editor')->firstOrFail();
+        $group = Group::query()->where('group_identifier', FixtureRoster::EDITORS_GROUP)->firstOrFail();
+        $role = Role::query()->where('name', FixtureRoster::EDITOR_ROLE)->firstOrFail();
 
-        self::assertSame('Starter Editors', $group->name, 'a new group is named by its label');
+        self::assertSame(FixtureRoster::EDITORS_LABEL, $group->name, 'a new group is named by its label');
         self::assertTrue($group->active, 'and is active');
-        self::assertSame('persona-roster', $group->created_by, 'and says the roster wrote it');
+        self::assertSame(PersonaGrantSeeder::ACTOR, $group->created_by, 'and says the roster wrote it');
         self::assertTrue($role->active, 'the role is active');
         self::assertSame([$role->id], $group->roles()->pluck('framework_roles.id')->all(), 'the group is mapped to the role');
         self::assertSame(
-            ['documents.view'],
+            [FixturePermission::DocumentsView->value],
             RolePermission::query()->where('role_id', $role->id)->where('active', true)->pluck('name')->all(),
             'the role holds the permission',
         );
@@ -78,11 +77,11 @@ final class PersonaGrantSeederTest extends TestCase
     public function testGrantsAddedThroughTheAdminUiSurvive(): void
     {
         self::seeder()->seed();
-        $editor = Role::query()->where('name', 'Editor')->firstOrFail();
+        $editor = Role::query()->where('name', FixtureRoster::EDITOR_ROLE)->firstOrFail();
         // Written through the models, as the administration pages write them.
         $permission = new RolePermission();
         $permission->role_id = $editor->id;
-        $permission->name = 'documents.edit';
+        $permission->name = FixturePermission::DocumentsEdit->value;
         $permission->active = true;
         $permission->created_by = 'jdoe';
         $permission->save();
@@ -94,27 +93,27 @@ final class PersonaGrantSeederTest extends TestCase
 
         self::seeder()->seed();
 
-        self::assertSame(1, RolePermission::query()->where('name', 'documents.edit')->count(), 'a permission the roster does not mention is kept');
+        self::assertSame(1, RolePermission::query()->where('name', FixturePermission::DocumentsEdit->value)->count(), 'a permission the roster does not mention is kept');
         self::assertSame(1, Role::query()->where('name', 'Reviewer')->count(), 'and so is a role');
     }
 
     public function testARenamedGroupKeepsItsName(): void
     {
         self::seeder()->seed();
-        $this->db->table('framework_groups')->where('group_identifier', self::EDITORS)->update(['name' => 'My Editors']);
+        $this->db->table('framework_groups')->where('group_identifier', FixtureRoster::EDITORS_GROUP)->update(['name' => 'My Editors']);
 
         self::seeder()->seed();
 
-        self::assertSame('My Editors', Group::query()->where('group_identifier', self::EDITORS)->value('name'), 'the local label is the developer\'s to change');
+        self::assertSame('My Editors', Group::query()->where('group_identifier', FixtureRoster::EDITORS_GROUP)->value('name'), 'the local label is the developer\'s to change');
     }
 
     public function testALabelTakenByAnotherGroupFallsBackToTheIdentifier(): void
     {
-        $this->db->table('framework_groups')->insert(['name' => 'Starter Editors', 'group_identifier' => 'iu:other', 'active' => true, 'created_by' => 'jdoe']);
+        $this->db->table('framework_groups')->insert(['name' => FixtureRoster::EDITORS_LABEL, 'group_identifier' => 'iu:other', 'active' => true, 'created_by' => 'jdoe']);
 
         self::seeder()->seed();
 
-        self::assertSame(self::EDITORS, Group::query()->where('group_identifier', self::EDITORS)->value('name'), 'names are unique, so the identifier stands in');
+        self::assertSame(FixtureRoster::EDITORS_GROUP, Group::query()->where('group_identifier', FixtureRoster::EDITORS_GROUP)->value('name'), 'names are unique, so the identifier stands in');
     }
 
     public function testADeactivatedGrantIsReactivated(): void
@@ -126,11 +125,11 @@ final class PersonaGrantSeederTest extends TestCase
 
         self::seeder()->seed();
 
-        $group = Group::query()->where('group_identifier', self::EDITORS)->firstOrFail();
+        $group = Group::query()->where('group_identifier', FixtureRoster::EDITORS_GROUP)->firstOrFail();
         self::assertTrue($group->active, 'the roster\'s group is active again');
-        self::assertSame('persona-roster', $group->updated_by, 'and says who changed it');
-        self::assertTrue(Role::query()->where('name', 'Editor')->firstOrFail()->active, 'so is its role');
-        self::assertSame(1, RolePermission::query()->where('name', 'documents.view')->where('active', true)->count(), 'and its permission');
+        self::assertSame(PersonaGrantSeeder::ACTOR, $group->updated_by, 'and says who changed it');
+        self::assertTrue(Role::query()->where('name', FixtureRoster::EDITOR_ROLE)->firstOrFail()->active, 'so is its role');
+        self::assertSame(1, RolePermission::query()->where('name', FixturePermission::DocumentsView->value)->where('active', true)->count(), 'and its permission');
     }
 
     /**
@@ -149,11 +148,11 @@ final class PersonaGrantSeederTest extends TestCase
 
     private static function seeder(): PersonaGrantSeeder
     {
-        $editors = new PersonaGroup(self::EDITORS, 'Starter Editors');
+        $editors = new PersonaGroup(FixtureRoster::EDITORS_GROUP, FixtureRoster::EDITORS_LABEL);
 
         return new PersonaGrantSeeder(new PersonaRoster(
-            [new Persona('editor', username: 'persona-editor', name: 'Erin Editor', groups: [$editors])],
-            grants: [new RoleGrant('Editor', groups: [$editors], permissions: [FixturePermission::DocumentsView])],
+            [new Persona(FixtureRoster::EDITOR, username: FixtureRoster::EDITOR_USERNAME, name: FixtureRoster::EDITOR_NAME, groups: [$editors])],
+            grants: [new RoleGrant(FixtureRoster::EDITOR_ROLE, groups: [$editors], permissions: [FixturePermission::DocumentsView])],
         ));
     }
 }

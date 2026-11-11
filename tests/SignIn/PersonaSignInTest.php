@@ -35,6 +35,10 @@ use Psr\Http\Server\RequestHandlerInterface;
 #[UsesClass(Csrf::class)]
 final class PersonaSignInTest extends TestCase
 {
+    private const string EDITOR = 'editor';
+
+    private const string EDITOR_USERNAME = 'persona-editor';
+
     private ArraySessionStore $session;
 
     private TestHandler $log;
@@ -45,7 +49,7 @@ final class PersonaSignInTest extends TestCase
     {
         $this->session = new ArraySessionStore();
         $this->log = new TestHandler();
-        $this->roster = new PersonaRoster([new Persona('editor', username: 'persona-editor', name: 'Erin Editor')]);
+        $this->roster = new PersonaRoster([new Persona(self::EDITOR, username: self::EDITOR_USERNAME, name: 'Erin Editor')]);
     }
 
     public function testAGuestReadsAsNobody(): void
@@ -61,7 +65,7 @@ final class PersonaSignInTest extends TestCase
 
         $signIn->signInAs($this->editor());
 
-        self::assertSame('persona-editor', $signIn->read()?->username, 'the persona is who is making requests');
+        self::assertSame(self::EDITOR_USERNAME, $signIn->read()?->username, 'the persona is who is making requests');
         self::assertSame(1, $this->session->regenerations, 'a session ID known before the switch is worthless after');
         self::assertNotSame($tokenBefore, $csrf->token(), 'and so is a form issued before it');
         self::assertTrue(
@@ -173,7 +177,7 @@ final class PersonaSignInTest extends TestCase
 
     private function editor(): Persona
     {
-        $editor = $this->roster->find(new PersonaKey('editor'));
+        $editor = $this->roster->find(new PersonaKey(self::EDITOR));
         self::assertNotNull($editor);
 
         return $editor;

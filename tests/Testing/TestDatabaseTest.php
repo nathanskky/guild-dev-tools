@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Guild\DevTools\Test\Testing;
 
+use Guild\DevTools\Test\Support\FixtureRoster;
 use Guild\DevTools\Testing\TestDatabase;
 use Guild\Framework\Model\Group;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -25,8 +26,8 @@ final class TestDatabaseTest extends TestCase
         TestDatabase::activate();
         TestDatabase::begin();
         $group = new Group();
-        $group->name = 'Starter Editors';
-        $group->group_identifier = 'iu:roles:sys:acm:starter-editors';
+        $group->name = FixtureRoster::EDITORS_LABEL;
+        $group->group_identifier = FixtureRoster::EDITORS_GROUP;
         $group->active = true;
         $group->created_by = 'jdoe';
         $group->save();

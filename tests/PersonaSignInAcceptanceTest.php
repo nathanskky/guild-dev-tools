@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Guild\DevTools\Test;
 
+use Guild\DevTools\Test\Support\FixtureRoster;
 use Guild\DevTools\Testing\VisitsApplication;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
@@ -34,37 +35,37 @@ final class PersonaSignInAcceptanceTest extends TestCase
 
     public function testTheEditorHoldsTheSeededGrantAndSeesThePage(): void
     {
-        $this->signedInAs('editor')->get('/documents')->assertOk()->assertSee('documents');
+        $this->signedInAs(FixtureRoster::EDITOR)->get('/documents')->assertOk()->assertSee('documents');
     }
 
     public function testAPersonaInNoGroupIsRefused(): void
     {
-        $this->signedInAs('newcomer')->get('/documents')->assertForbidden();
+        $this->signedInAs(FixtureRoster::NEWCOMER)->get('/documents')->assertForbidden();
     }
 
     public function testAPersonaGrouperCannotAnswerForGetsServiceUnavailable(): void
     {
-        $this->signedInAs('outage')->get('/documents')->assertServiceUnavailable();
+        $this->signedInAs(FixtureRoster::OUTAGE)->get('/documents')->assertServiceUnavailable();
     }
 
     public function testTheRostersSystemAdminGroupOpensTheAdministrationPages(): void
     {
-        $this->signedInAs('admin')->get('/framework/authorization')->assertOk();
+        $this->signedInAs(FixtureRoster::ADMIN)->get('/framework/authorization')->assertOk();
     }
 
     public function testTheAdministrationPagesAreClosedToEveryoneElse(): void
     {
-        $this->signedInAs('editor')->get('/framework/authorization')->assertForbidden();
+        $this->signedInAs(FixtureRoster::EDITOR)->get('/framework/authorization')->assertForbidden();
     }
 
     public function testWithTheOutageToggleOnAndNothingCachedTheEditorGetsServiceUnavailable(): void
     {
-        $this->signedInAs('editor')->duringDirectoryOutage()->get('/documents')->assertServiceUnavailable();
+        $this->signedInAs(FixtureRoster::EDITOR)->duringDirectoryOutage()->get('/documents')->assertServiceUnavailable();
     }
 
     public function testARequestToAnyOtherHostIsNotFoundSignedInOrNot(): void
     {
-        $this->signedInAs('editor')->get('https://example.org/documents')->assertNotFound();
+        $this->signedInAs(FixtureRoster::EDITOR)->get('https://example.org/documents')->assertNotFound();
         $this->asGuest()->get('https://example.org/documents')->assertNotFound();
     }
 }

@@ -16,6 +16,8 @@ use Guild\DevTools\SignIn\LocalHost;
 use Guild\DevTools\SignIn\PersonaGroupDirectory;
 use Guild\DevTools\SignIn\PersonaSignIn;
 use Guild\DevTools\SignIn\SignedInPersona;
+use Guild\DevTools\Test\Support\FixturePermission;
+use Guild\DevTools\Test\Support\FixtureRoster;
 use Guild\DevTools\Testing\ApplicationUnderTest;
 use Guild\DevTools\Testing\TestDatabase;
 use Guild\DevTools\Testing\Visit;
@@ -59,8 +61,8 @@ final class VisitTest extends TestCase
     public function testAnInlinePersonaCombinesTheRostersGroups(): void
     {
         $editorAdmin = $this->signedInAs(new Persona('editor-admin', username: 'persona-editor-admin', name: 'Eda Editor-Admin', groups: [
-            new PersonaGroup('iu:roles:sys:acm:starter-editors', 'Starter Editors'),
-            new PersonaGroup('iu:roles:sys:acm:starter-admins', 'Starter Admins'),
+            new PersonaGroup(FixtureRoster::EDITORS_GROUP, FixtureRoster::EDITORS_LABEL),
+            new PersonaGroup(FixtureRoster::ADMINS_GROUP, FixtureRoster::ADMINS_LABEL),
         ]));
 
         $editorAdmin->get('/documents')->assertOk();
@@ -79,7 +81,7 @@ final class VisitTest extends TestCase
 
     public function testPostFillsInTheCsrfToken(): void
     {
-        $response = $this->signedInAs('editor')->post('/documents', ['title' => 'Minutes']);
+        $response = $this->signedInAs(FixtureRoster::EDITOR)->post('/documents', ['title' => 'Minutes']);
 
         self::assertSame(201, $response->status(), 'the form was accepted without the test handling the token');
         $response->assertSee('stored Minutes');
@@ -87,12 +89,12 @@ final class VisitTest extends TestCase
 
     public function testAWrongCsrfTokenIsRefused(): void
     {
-        $this->signedInAs('editor')->post('/documents', ['_csrf' => 'wrong'])->assertForbidden()->assertSee('Form expired');
+        $this->signedInAs(FixtureRoster::EDITOR)->post('/documents', ['_csrf' => 'wrong'])->assertForbidden()->assertSee('Form expired');
     }
 
     public function testADirectoryOutageAppliesOnlyToTheDerivedVisit(): void
     {
-        $visit = $this->signedInAs('editor');
+        $visit = $this->signedInAs(FixtureRoster::EDITOR);
 
         $visit->duringDirectoryOutage()->get('/documents')->assertServiceUnavailable();
         $visit->get('/documents')->assertOk();
@@ -100,7 +102,7 @@ final class VisitTest extends TestCase
 
     public function testAnOutageAfterBrowsingIsAnsweredFromTheCache(): void
     {
-        $visit = $this->signedInAs('editor');
+        $visit = $this->signedInAs(FixtureRoster::EDITOR);
         $visit->get('/documents')->assertOk();
 
         // The copy keeps the membership the first request cached, which is within its TTL, as in production.
@@ -109,7 +111,7 @@ final class VisitTest extends TestCase
 
     public function testTwoVisitsAreSeparateVisitors(): void
     {
-        $editor = $this->signedInAs('editor');
+        $editor = $this->signedInAs(FixtureRoster::EDITOR);
         $guest = $this->asGuest();
 
         $editor->get('/documents')->assertOk();
@@ -138,7 +140,7 @@ final class VisitTest extends TestCase
         $group->roles()->attach($role->id, ['created_by' => 'jdoe']);
         $permission = new RolePermission();
         $permission->role_id = $role->id;
-        $permission->name = 'documents.view';
+        $permission->name = FixturePermission::DocumentsView->value;
         $permission->active = true;
         $permission->created_by = 'jdoe';
         $permission->save();
@@ -148,11 +150,11 @@ final class VisitTest extends TestCase
 
     public function testAGrantRevokedMidTestStaysRevoked(): void
     {
-        $visit = $this->signedInAs('editor');
+        $visit = $this->signedInAs(FixtureRoster::EDITOR);
         $visit->get('/documents')->assertOk();
 
         // An administrator deactivates the Editor role.
-        $editor = Role::query()->where('name', 'Editor')->firstOrFail();
+        $editor = Role::query()->where('name', FixtureRoster::EDITOR_ROLE)->firstOrFail();
         $editor->active = false;
         $editor->updated_by = 'jdoe';
         $editor->save();
@@ -162,7 +164,7 @@ final class VisitTest extends TestCase
 
     public function testASessionCarriesAcrossAVisitsRequests(): void
     {
-        $visit = $this->signedInAs('editor');
+        $visit = $this->signedInAs(FixtureRoster::EDITOR);
         $visit->get('/documents')->assertOk();
 
         $visit->post('/framework/sign-out')->assertRedirect('/_dev/personas');
@@ -179,14 +181,14 @@ final class VisitTest extends TestCase
 
     public function testAVisitSeedsTheRostersGrants(): void
     {
-        self::assertFalse(Role::query()->where('name', 'Editor')->exists(), 'before the first visit, the roster\'s role is not there');
+        self::assertFalse(Role::query()->where('name', FixtureRoster::EDITOR_ROLE)->exists(), 'before the first visit, the roster\'s role is not there');
 
         $this->asGuest()->get('/documents');
 
-        $editor = Role::query()->where('name', 'Editor')->first();
+        $editor = Role::query()->where('name', FixtureRoster::EDITOR_ROLE)->first();
         self::assertNotNull($editor, 'the visit wrote the roster\'s role');
         self::assertTrue(
-            RolePermission::query()->where('role_id', $editor->id)->where('name', 'documents.view')->exists(),
+            RolePermission::query()->where('role_id', $editor->id)->where('name', FixturePermission::DocumentsView->value)->exists(),
             'with its permission',
         );
     }

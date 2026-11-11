@@ -11,6 +11,7 @@ use Guild\DevTools\Persona\PersonaKey;
 use Guild\DevTools\Persona\PersonaRoster;
 use Guild\DevTools\Persona\RoleGrant;
 use Guild\DevTools\Test\Support\FixturePermission;
+use Guild\DevTools\Test\Support\FixtureRoster;
 use Guild\Framework\Exception\ConfigurationException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -28,7 +29,7 @@ final class PersonaRosterTest extends TestCase
         $roster = self::exampleRoster();
 
         self::assertCount(4, $roster->personas, 'all four personas are kept');
-        self::assertSame('Starter Admins', $roster->systemAdminGroup?->label, 'the roster names the System Admin group');
+        self::assertSame(FixtureRoster::ADMINS_LABEL, $roster->systemAdminGroup?->label, 'the roster names the System Admin group');
         self::assertSame([FixturePermission::DocumentsView], $roster->grants[0]->permissions, 'grants keep their permissions');
     }
 
@@ -36,8 +37,8 @@ final class PersonaRosterTest extends TestCase
     {
         $roster = self::exampleRoster();
 
-        self::assertSame('Erin Editor', $roster->find(new PersonaKey('editor'))?->name, 'by the key tests and the session use');
-        self::assertSame('Erin Editor', $roster->findByUsername('persona-editor')?->name, 'by the username the group directory is asked about');
+        self::assertSame(FixtureRoster::EDITOR_NAME, $roster->find(new PersonaKey(FixtureRoster::EDITOR))?->name, 'by the key tests and the session use');
+        self::assertSame(FixtureRoster::EDITOR_NAME, $roster->findByUsername(FixtureRoster::EDITOR_USERNAME)?->name, 'by the username the group directory is asked about');
         self::assertNull($roster->find(new PersonaKey('nobody')), 'an unknown key finds nothing');
         self::assertNull($roster->findByUsername('jdoe'), 'an unknown username finds nothing');
     }
@@ -131,18 +132,18 @@ final class PersonaRosterTest extends TestCase
 
     private static function exampleRoster(): PersonaRoster
     {
-        $editors = new PersonaGroup('iu:roles:sys:acm:starter-editors', 'Starter Editors');
-        $admins = new PersonaGroup('iu:roles:sys:acm:starter-admins', 'Starter Admins');
+        $editors = new PersonaGroup(FixtureRoster::EDITORS_GROUP, FixtureRoster::EDITORS_LABEL);
+        $admins = new PersonaGroup(FixtureRoster::ADMINS_GROUP, FixtureRoster::ADMINS_LABEL);
 
         return new PersonaRoster(
             personas: [
-                new Persona('editor', username: 'persona-editor', name: 'Erin Editor', groups: [$editors]),
-                new Persona('newcomer', username: 'persona-newcomer', name: 'Nico Newcomer'),
-                new Persona('admin', username: 'persona-admin', name: 'Ada Admin', groups: [$admins]),
-                new Persona('outage', username: 'persona-outage', name: 'Grouper Down', directory: DirectoryStatus::Unavailable),
+                new Persona(FixtureRoster::EDITOR, username: FixtureRoster::EDITOR_USERNAME, name: FixtureRoster::EDITOR_NAME, groups: [$editors]),
+                new Persona(FixtureRoster::NEWCOMER, username: FixtureRoster::NEWCOMER_USERNAME, name: FixtureRoster::NEWCOMER_NAME),
+                new Persona(FixtureRoster::ADMIN, username: FixtureRoster::ADMIN_USERNAME, name: FixtureRoster::ADMIN_NAME, groups: [$admins]),
+                new Persona(FixtureRoster::OUTAGE, username: FixtureRoster::OUTAGE_USERNAME, name: FixtureRoster::OUTAGE_NAME, directory: DirectoryStatus::Unavailable),
             ],
             grants: [
-                new RoleGrant('Editor', groups: [$editors], permissions: [FixturePermission::DocumentsView]),
+                new RoleGrant(FixtureRoster::EDITOR_ROLE, groups: [$editors], permissions: [FixturePermission::DocumentsView]),
             ],
             systemAdminGroup: $admins,
         );

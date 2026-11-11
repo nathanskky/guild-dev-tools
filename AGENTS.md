@@ -34,6 +34,14 @@ acceptance test and `tests/Testing` visit it with this package's own test kit. `
 an IU Login application shaped like guild/starter's (settings from `$_ENV`) with persona sign-in off, and
 `tests/Fixture/not-an-app` a broken `config/app.php`.
 
+Tests name the fixture application's personas, groups and role through `tests/Support/FixtureRoster`, and its
+permissions through `FixturePermission`. Renaming fixture data is then one edit, and a test that missed it fails
+to find it. A test that builds its own roster keeps its own values, as class constants where it repeats them.
+
+A negative assertion keyed on a string (`assertDontSee`, `assertStringNotContainsString`,
+`assertFalse(…->exists())`) is paired, in the same test, with a positive assertion on that string. On its own it
+would still pass after a rename, because the old string is absent everywhere.
+
 `phpunit.xml.dist` forces `PERSONA_SIGN_IN_ENABLED` on and both secrets blank for every test, as an
 application's would. Tests of the extension itself pass their environment to `PersonaSignInExtension`
 explicitly.

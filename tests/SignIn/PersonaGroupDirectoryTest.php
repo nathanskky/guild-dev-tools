@@ -32,11 +32,10 @@ final class PersonaGroupDirectoryTest extends GroupDirectoryContract
 {
     public function testAnUnavailablePersonaIsAnOutage(): void
     {
-        $roster = new PersonaRoster([
-            new Persona('outage', username: 'persona-outage', name: 'Grouper Down', directory: DirectoryStatus::Unavailable),
-        ]);
+        $outage = new Persona('outage', username: 'persona-outage', name: 'Grouper Down', directory: DirectoryStatus::Unavailable);
+        $roster = new PersonaRoster([$outage]);
 
-        $result = new PersonaGroupDirectory($roster, new DirectoryOutage(new ArraySessionStore()))->groupsFor('persona-outage');
+        $result = new PersonaGroupDirectory($roster, new DirectoryOutage(new ArraySessionStore()))->groupsFor($outage->username);
 
         self::assertInstanceOf(GrouperUnavailable::class, $result, 'the persona exists to show the 503 path');
         self::assertSame("persona 'outage' is configured with DirectoryStatus::Unavailable", $result->reason, 'the logged reason says why');
@@ -45,16 +44,15 @@ final class PersonaGroupDirectoryTest extends GroupDirectoryContract
     public function testTheOutageToggleMakesEveryoneUnavailable(): void
     {
         $outage = new DirectoryOutage(new ArraySessionStore());
-        $directory = new PersonaGroupDirectory(new PersonaRoster([
-            new Persona('editor', username: 'persona-editor', name: 'Erin Editor', groups: [new PersonaGroup('iu:x', 'X Editors')]),
-            new Persona('newcomer', username: 'persona-newcomer', name: 'Nico Newcomer'),
-        ]), $outage);
+        $editor = new Persona('editor', username: 'persona-editor', name: 'Erin Editor', groups: [new PersonaGroup('iu:x', 'X Editors')]);
+        $newcomer = new Persona('newcomer', username: 'persona-newcomer', name: 'Nico Newcomer');
+        $directory = new PersonaGroupDirectory(new PersonaRoster([$editor, $newcomer]), $outage);
 
         $outage->turnOn();
-        $editorDuring = $directory->groupsFor('persona-editor');
-        $newcomerDuring = $directory->groupsFor('persona-newcomer');
+        $editorDuring = $directory->groupsFor($editor->username);
+        $newcomerDuring = $directory->groupsFor($newcomer->username);
         $outage->turnOff();
-        $after = $directory->groupsFor('persona-editor');
+        $after = $directory->groupsFor($editor->username);
 
         self::assertInstanceOf(GrouperUnavailable::class, $editorDuring, 'with the toggle on, Grouper is down for a persona with groups');
         self::assertInstanceOf(GrouperUnavailable::class, $newcomerDuring, 'and for one without');

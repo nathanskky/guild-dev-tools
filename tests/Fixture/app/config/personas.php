@@ -8,19 +8,20 @@ use Guild\DevTools\Persona\PersonaGroup;
 use Guild\DevTools\Persona\PersonaRoster;
 use Guild\DevTools\Persona\RoleGrant;
 use Guild\DevTools\Test\Support\FixturePermission;
+use Guild\DevTools\Test\Support\FixtureRoster as R;
 
-$editors = new PersonaGroup('iu:roles:sys:acm:starter-editors', 'Starter Editors');
-$admins = new PersonaGroup('iu:roles:sys:acm:starter-admins', 'Starter Admins');
+$editors = new PersonaGroup(R::EDITORS_GROUP, R::EDITORS_LABEL);
+$admins = new PersonaGroup(R::ADMINS_GROUP, R::ADMINS_LABEL);
 
 return new PersonaRoster(
     personas: [
-        new Persona('editor', username: 'persona-editor', name: 'Erin Editor', groups: [$editors]),
-        new Persona('newcomer', username: 'persona-newcomer', name: 'Nico Newcomer'),
-        new Persona('admin', username: 'persona-admin', name: 'Ada Admin', groups: [$admins]),
-        new Persona('outage', username: 'persona-outage', name: 'Grouper Down', directory: DirectoryStatus::Unavailable),
+        new Persona(R::EDITOR, username: R::EDITOR_USERNAME, name: R::EDITOR_NAME, groups: [$editors]),
+        new Persona(R::NEWCOMER, username: R::NEWCOMER_USERNAME, name: R::NEWCOMER_NAME),
+        new Persona(R::ADMIN, username: R::ADMIN_USERNAME, name: R::ADMIN_NAME, groups: [$admins]),
+        new Persona(R::OUTAGE, username: R::OUTAGE_USERNAME, name: R::OUTAGE_NAME, directory: DirectoryStatus::Unavailable),
     ],
     grants: [
-        new RoleGrant('Editor', groups: [$editors], permissions: [FixturePermission::DocumentsView, FixturePermission::DocumentsEdit]),
+        new RoleGrant(R::EDITOR_ROLE, groups: [$editors], permissions: [FixturePermission::DocumentsView, FixturePermission::DocumentsEdit]),
     ],
     systemAdminGroup: $admins,
 );
