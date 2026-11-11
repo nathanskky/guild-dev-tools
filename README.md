@@ -71,10 +71,22 @@ return new PersonaRoster(
 - `DirectoryStatus::Unavailable` makes Grouper unreachable for that persona, to show the 503 page.
 
 `grants:` are written into the framework's grant tables by `PersonaGrantSeeder`, through the same models the
-administration pages use. It adds and reactivates and never deletes, so grants added through
-`/framework/authorization` survive. Rows it writes say `persona-roster` in `created_by`.
+administration pages use, each time the persona picker opens and before each test visit. It adds and
+reactivates and never deletes, so grants added through `/framework/authorization` survive. Rows it writes say
+`persona-roster` in `created_by`. A roster with no `grants:` writes nothing, so an application with
+authorization off needs no database.
 
 A roster that breaks a rule fails at boot with a message naming the persona or group and the fix.
+
+## The persona picker
+
+Open `/_dev/personas` on the local stack. A guest on a page that needs sign-in is sent there, and returns to
+that page after choosing.
+
+Each persona is listed with its key, username, groups, and the roles and permissions those groups grant, so
+you can see what it should be able to do before choosing. `System Admin` marks the persona in the roster's
+System Admin group, and `Grouper unavailable` one with `DirectoryStatus::Unavailable`. `Continue as a guest`
+signs out.
 
 ## Safety
 
@@ -86,7 +98,7 @@ the rest limit what it can do where it does run:
 | Absent from production | Installed with `require-dev`, so a `--no-dev` build does not contain it |
 | Off unless chosen | Inactive unless `PERSONA_SIGN_IN_ENABLED` is `true` or `1` |
 | Refuses real credentials | Boot fails if `OIDC_CLIENT_SECRET` or `GROUPER_PASSWORD` is set while it is on |
-| Local hosts only | Signing in answers 404 unless the request's host is `localhost`, `127.0.0.1` or `::1`, so an app reached under a real host name never offers it. The host comes from the client's `Host` header, so this is no defence against a crafted request |
+| Local hosts only | Signing in and the picker answer 404 unless the request's host is `localhost`, `127.0.0.1` or `::1`, so an app reached under a real host name never offers it. The host comes from the client's `Host` header, so this is no defence against a crafted request |
 | Session hygiene | The session ID and CSRF token are replaced on every switch and sign-out |
 | Audited | Every switch and sign-out is logged at `notice` with the persona's key |
 

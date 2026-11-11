@@ -31,6 +31,11 @@ final readonly class PersonaGrantSeeder
 
     public function seed(): void
     {
+        // An application with authorization off has no grants, and may have no database.
+        if ($this->roster->grants === []) {
+            return;
+        }
+
         new Group()->getConnection()->transaction(function (): void {
             foreach ($this->roster->grants as $grant) {
                 $this->seedGrant($grant);

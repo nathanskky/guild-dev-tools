@@ -22,9 +22,12 @@ use Guild\Framework\Authentication\SignInMethod;
 use Guild\Framework\Authorization\IdentitySource;
 use Guild\Framework\Authorization\Membership\GroupDirectory;
 use Guild\Framework\Exception\ConfigurationException;
+use Guild\Framework\Router;
 use Guild\Framework\Session\SessionStore;
 use Guild\Framework\Testing\ArraySessionStore;
 use Guild\Grouper\GroupMembership;
+use Laminas\Diactoros\ServerRequest;
+use League\Route\Http\Exception\NotFoundException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -228,6 +231,16 @@ final class PersonaSignInExtensionTest extends TestCase
         self::assertInstanceOf(PersonaGrantSeeder::class, $app->get(PersonaGrantSeeder::class), 'and the seeder is ready for the picker and the test kit');
     }
 
+    public function testWithTheFlagOffThereIsNoPicker(): void
+    {
+        $router = self::configure([])->addRouting()->create()->get(Router::class);
+        self::assertInstanceOf(Router::class, $router);
+
+        $this->expectException(NotFoundException::class);
+
+        $router->dispatch(new ServerRequest(uri: 'http://localhost/_dev/personas', method: 'GET'));
+    }
+
     public function testAnOverriddenRosterReachesSignInAndTheDirectory(): void
     {
         $app = self::configure(self::ENABLED)
@@ -244,9 +257,9 @@ final class PersonaSignInExtensionTest extends TestCase
         $signIn->signInAs($inline);
         $directory = $app->get(GroupDirectory::class);
         self::assertInstanceOf(GroupDirectory::class, $directory);
-        $membership = $directory->groupsFor('persona-inline');
+        $membership = $directory->groupsFor($inline->username);
 
-        self::assertSame('persona-inline', $signIn->read()?->username, 'a test kit can sign in as a one-off persona');
+        self::assertSame($inline->username, $signIn->read()?->username, 'a test kit can sign in as a one-off persona');
         self::assertInstanceOf(GroupMembership::class, $membership);
         self::assertCount(1, $membership->groups, 'and the directory knows its groups');
     }

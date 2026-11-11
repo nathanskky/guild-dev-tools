@@ -18,6 +18,7 @@ use Guild\Framework\Model\RolePermission;
 use Guild\Framework\Testing\FrameworkSchema;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\Connection;
+use Illuminate\Database\Eloquent\Model;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -114,6 +115,20 @@ final class PersonaGrantSeederTest extends TestCase
         self::seeder()->seed();
 
         self::assertSame(FixtureRoster::EDITORS_GROUP, Group::query()->where('group_identifier', FixtureRoster::EDITORS_GROUP)->value('name'), 'names are unique, so the identifier stands in');
+    }
+
+    public function testARosterWithoutGrantsTouchesNoDatabase(): void
+    {
+        $resolver = Model::getConnectionResolver();
+        Model::unsetConnectionResolver();
+
+        try {
+            new PersonaGrantSeeder(new PersonaRoster([new Persona('newcomer', username: 'persona-newcomer', name: 'Nico Newcomer')]))->seed();
+        } finally {
+            Model::setConnectionResolver($resolver);
+        }
+
+        self::assertSame(0, Role::query()->count(), 'an application with authorization off has no grants and maybe no database');
     }
 
     public function testADeactivatedGrantIsReactivated(): void

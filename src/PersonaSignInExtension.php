@@ -7,6 +7,9 @@ namespace Guild\DevTools;
 use Error;
 use Guild\DevTools\Grant\PersonaGrantSeeder;
 use Guild\DevTools\Persona\PersonaRoster;
+use Guild\DevTools\Picker\PersonaPickerController;
+use Guild\DevTools\Picker\PersonaPickerPage;
+use Guild\DevTools\Picker\RequireLocalHost;
 use Guild\DevTools\SignIn\DirectoryOutage;
 use Guild\DevTools\SignIn\PersonaGroupDirectory;
 use Guild\DevTools\SignIn\PersonaSignIn;
@@ -16,6 +19,9 @@ use Guild\Framework\Application;
 use Guild\Framework\ApplicationBuilder;
 use Guild\Framework\Exception\ConfigurationException;
 use Guild\Framework\Extension\ApplicationExtension;
+use Guild\Framework\Middleware\VerifyCsrfToken;
+use Guild\Framework\Router;
+use League\Route\RouteGroup;
 use Guild\Framework\Session\SessionStore;
 use Override;
 use Psr\Log\LoggerInterface;
@@ -101,6 +107,33 @@ final class PersonaSignInExtension implements ApplicationExtension
             PersonaGrantSeeder::class,
             static fn (): PersonaGrantSeeder => new PersonaGrantSeeder(self::service($app, PersonaRoster::class)),
         );
+        $app->addShared(RequireLocalHost::class, static fn (): RequireLocalHost => new RequireLocalHost());
+        $app->addShared(PersonaPickerPage::class, static fn (): PersonaPickerPage => new PersonaPickerPage(
+            self::service($app, PersonaRoster::class),
+            self::service($app, Csrf::class),
+        ));
+        $app->addShared(PersonaPickerController::class, static fn (): PersonaPickerController => new PersonaPickerController(
+            self::service($app, SignedInPersona::class),
+            self::service($app, PersonaSignIn::class),
+            self::service($app, DirectoryOutage::class),
+            self::service($app, PersonaGrantSeeder::class),
+            self::service($app, PersonaPickerPage::class),
+        ));
+
+        self::mountPicker(self::service($app, Router::class));
+    }
+
+    /**
+     * The picker's routes under /_dev/personas. The host check runs before
+     * the CSRF check, so another host gets 404, never the expired-form page.
+     */
+    private static function mountPicker(Router $router): void
+    {
+        $router->group(PersonaSignIn::PICKER_PATH, static function (RouteGroup $group): void {
+            $group->map('GET', '/', [PersonaPickerController::class, 'show']);
+        })
+            ->lazyMiddleware(RequireLocalHost::class)
+            ->lazyMiddleware(VerifyCsrfToken::class);
     }
 
     /**

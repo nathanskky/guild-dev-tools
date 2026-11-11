@@ -56,6 +56,8 @@ explicitly.
   and their session state `SignedInPersona` and `DirectoryOutage`; `LocalHost`; `ReturnPath`, the one rule for
   where a visitor may be sent back to
 - `Grant\` — `PersonaGrantSeeder`
+- `Picker\` — the persona picker at `/_dev/personas`: `PersonaPickerController`, `PersonaPickerPage` (its
+  markup), `RequireLocalHost`
 - `Testing\` — the test kit: `VisitsApplication` (trait for test cases), `Visit`, `VisitResponse` (API), and
   `ApplicationUnderTest`, `TestDatabase` (internal)
 
@@ -69,8 +71,10 @@ explicitly.
 
 ## Landmines
 
-- **`PersonaSignIn::challenge()` redirects to `/_dev/personas`**, the persona picker, which does not exist
-  yet. Until it does, a guest on a `RequireSignIn` route gets a 404 after the redirect.
+- **The picker renders with its own Rivet renderer**, never the application's: the application's navigation
+  may itself need someone signed in, and the framework's `AdminPage` is internal and titled "Administration".
+- **The picker's routes check the host before the CSRF token** (`RequireLocalHost`, then `VerifyCsrfToken`),
+  so another host gets 404, not the expired-form page.
 - **The challenge's return path relies on the PSR-7 URI.** Laminas normalises `//host` paths and encodes
   backslashes before `PersonaSignIn` sees them; `ReturnPath` refuses both anyway.
 - **Claimed classes must be bound in `boot()`.** The framework checks at `create()` that the container can
