@@ -47,11 +47,13 @@ trait VisitsApplication
     }
 
     /**
-     * Before setUp(), so rows a test writes there are rolled back too.
+     * Before setUp(), so rows a test writes there go to the test database
+     * and are rolled back too.
      */
     #[Before(priority: 1)]
     protected function beginVisitTransaction(): void
     {
+        TestDatabase::activate();
         TestDatabase::begin();
     }
 

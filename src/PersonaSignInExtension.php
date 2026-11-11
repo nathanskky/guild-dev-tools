@@ -56,8 +56,7 @@ final class PersonaSignInExtension implements ApplicationExtension
     #[Override]
     public function configure(ApplicationBuilder $builder): void
     {
-        // 1 as well as true: phpunit.xml's <env value="true"> reaches PHP as 1.
-        if (! in_array(strtolower(trim($this->environment[self::FLAG] ?? '')), ['true', '1'], true)) {
+        if (! self::isEnabledIn($this->environment)) {
             return;
         }
 
@@ -102,6 +101,18 @@ final class PersonaSignInExtension implements ApplicationExtension
             PersonaGrantSeeder::class,
             static fn (): PersonaGrantSeeder => new PersonaGrantSeeder(self::service($app, PersonaRoster::class)),
         );
+    }
+
+    /**
+     * Whether $environment turns persona sign-in on: PERSONA_SIGN_IN_ENABLED
+     * is true or 1, in any case. 1 because phpunit.xml's <env value="true">
+     * reaches PHP as 1.
+     *
+     * @param  array<string, string>  $environment  As mergeEnvironment() returns it.
+     */
+    public static function isEnabledIn(array $environment): bool
+    {
+        return in_array(strtolower(trim($environment[self::FLAG] ?? '')), ['true', '1'], true);
     }
 
     private function refuseRealCredentials(): void

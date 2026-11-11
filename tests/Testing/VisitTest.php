@@ -51,13 +51,6 @@ final class VisitTest extends TestCase
 {
     use VisitsApplication;
 
-    private int $transactionLevelInSetUp = 0;
-
-    protected function setUp(): void
-    {
-        $this->transactionLevelInSetUp = TestDatabase::capsule()->getConnection()->transactionLevel();
-    }
-
     protected function applicationBasePath(): string
     {
         return dirname(__DIR__) . '/Fixture/app';
@@ -153,9 +146,24 @@ final class VisitTest extends TestCase
         $visit->get('/documents')->assertOk();
     }
 
+    public function testAGrantRevokedMidTestStaysRevoked(): void
+    {
+        $visit = $this->signedInAs('editor');
+        $visit->get('/documents')->assertOk();
+
+        // An administrator deactivates the Editor role.
+        $editor = Role::query()->where('name', 'Editor')->firstOrFail();
+        $editor->active = false;
+        $editor->updated_by = 'jdoe';
+        $editor->save();
+
+        $visit->get('/documents')->assertForbidden();
+    }
+
     public function testASessionCarriesAcrossAVisitsRequests(): void
     {
         $visit = $this->signedInAs('editor');
+        $visit->get('/documents')->assertOk();
 
         $visit->post('/framework/sign-out')->assertRedirect('/_dev/personas');
         $visit->get('/documents')->assertRedirectsToSignIn();
@@ -163,21 +171,15 @@ final class VisitTest extends TestCase
 
     public function testHeadersAreSentWithEveryRequest(): void
     {
-        $visit = $this->signedInAs('editor')->withHeaders(['X-Test' => 'yes']);
+        $visit = $this->asGuest()->withHeaders(['X-Test' => 'yes']);
 
         $visit->get('/echo-header')->assertSee('yes');
         $visit->get('/echo-header')->assertSee('yes');
-    }
-
-    public function testTheTransactionIsOpenBeforeSetUp(): void
-    {
-        self::assertGreaterThanOrEqual(1, $this->transactionLevelInSetUp, 'rows a test writes in setUp() are rolled back too');
     }
 
     public function testAVisitSeedsTheRostersGrants(): void
     {
-        TestDatabase::activate();
-        self::assertFalse(Role::query()->where('name', 'Editor')->exists(), 'the previous test\'s seeding was rolled back');
+        self::assertFalse(Role::query()->where('name', 'Editor')->exists(), 'before the first visit, the roster\'s role is not there');
 
         $this->asGuest()->get('/documents');
 

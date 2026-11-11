@@ -31,7 +31,8 @@ deprecations fail the run. Test classes live under `Guild\DevTools\Test\`.
 (the real migrations on in-memory SQLite) and `Testing\GroupDirectoryContract`, plus Monolog's `TestHandler`.
 `tests/Fixture/app` is a small application whose `config/app.php` discovers this package as an extension; the
 acceptance test and `tests/Testing` visit it with this package's own test kit. `tests/Fixture/persona-off` is
-an IU Login application with persona sign-in off, and `tests/Fixture/not-an-app` a broken `config/app.php`.
+an IU Login application shaped like guild/starter's (settings from `$_ENV`) with persona sign-in off, and
+`tests/Fixture/not-an-app` a broken `config/app.php`.
 
 `phpunit.xml.dist` forces `PERSONA_SIGN_IN_ENABLED` on and both secrets blank for every test, as an
 application's would. Tests of the extension itself pass their environment to `PersonaSignInExtension`
@@ -70,6 +71,8 @@ explicitly.
   so the extension accepts `1` as well as `true`.
 - **The test kit loads the application once per request**, not once per visit, so nothing one request
   resolved leaks into the next. Only the session (per visit) and the database (per test) carry over.
+- **The test kit seeds grants once per test**, on the first request after the transaction opens. Seeding on
+  every request would reactivate a grant a test revoked.
 - **The test kit has no clock.** The framework passes `time(...)` to `MembershipProvider`, and each visit
   starts with an empty session, so the membership TTL never expires inside a test.
 - **The test kit reads persona mode from the framework's claimed sign-in slot.** Resolving `SignInMethod`

@@ -144,7 +144,7 @@ Each request a visit makes loads the application from `config/app.php`, as a rea
 - a logger that discards everything
 - the request itself
 
-The roster's grants are seeded before each request. Each test runs in a database transaction that is rolled
+The roster's grants are seeded before a test's first request, so a grant the test revokes stays revoked. Each test runs in a database transaction that is rolled
 back after it, including rows written in `setUp()`. Only the framework's tables exist; the application's own
 migrations are not run yet.
 

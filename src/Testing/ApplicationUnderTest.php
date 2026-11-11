@@ -7,6 +7,7 @@ namespace Guild\DevTools\Testing;
 use Guild\DevTools\Grant\PersonaGrantSeeder;
 use Guild\DevTools\Persona\Persona;
 use Guild\DevTools\Persona\PersonaRoster;
+use Guild\DevTools\PersonaSignInExtension;
 use Guild\DevTools\SignIn\PersonaSignIn;
 use Guild\Framework\Application;
 use Guild\Framework\Exception\ConfigurationException;
@@ -15,6 +16,7 @@ use Illuminate\Database\Capsule\Manager as Capsule;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Throwable;
 
 /**
  * Loads the application from its config/app.php for one request of a
@@ -45,10 +47,7 @@ final class ApplicationUnderTest
         // Read from the claim, not by resolving the sign-in method: that
         // would build it with the roster before an inline persona joins it.
         if ($app->claimedSlots->signInMethod?->value !== PersonaSignIn::class) {
-            throw new ConfigurationException(
-                'The test kit signs in through persona sign-in, which is off. Turn it on for tests in phpunit.xml.dist: '
-                . '<env name="PERSONA_SIGN_IN_ENABLED" value="true" force="true"/>.'
-            );
+            throw self::personaSignInIsOff();
         }
 
         if ($inlinePersona !== null) {
@@ -61,7 +60,9 @@ final class ApplicationUnderTest
             ), overwrite: true);
         }
 
-        self::service($app, PersonaGrantSeeder::class)->seed();
+        if (TestDatabase::seedOnce()) {
+            self::service($app, PersonaGrantSeeder::class)->seed();
+        }
 
         return $app;
     }
@@ -86,6 +87,14 @@ final class ApplicationUnderTest
 
         try {
             $app = require $file;
+        } catch (Throwable $failure) {
+            // With persona sign-in off, an application fails inside its own IU
+            // Login or Grouper settings, which tests do not have.
+            if (! PersonaSignInExtension::isEnabledIn(PersonaSignInExtension::mergeEnvironment(getenv(), $_ENV))) {
+                throw self::personaSignInIsOff($failure);
+            }
+
+            throw $failure;
         } finally {
             ini_set('error_log', $previous === false ? '' : $previous);
         }
@@ -95,6 +104,15 @@ final class ApplicationUnderTest
         }
 
         return $app;
+    }
+
+    private static function personaSignInIsOff(?Throwable $previous = null): ConfigurationException
+    {
+        return new ConfigurationException(
+            'The test kit signs in through persona sign-in, which is off. Turn it on for tests in phpunit.xml.dist: '
+            . '<env name="PERSONA_SIGN_IN_ENABLED" value="true" force="true"/>.',
+            previous: $previous,
+        );
     }
 
     /**

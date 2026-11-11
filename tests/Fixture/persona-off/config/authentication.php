@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-// Stub IU Login settings; nothing contacts the provider.
+// As guild/starter reads them: from the environment, with no defaults.
 return new Guild\Access\Authentication\OIDC\OidcConfiguration(
-    providerUrl: 'https://idp.example.test',
-    clientId: 'stub',
-    clientSecret: 'stub',
-    redirectUri: 'https://localhost/signin-oidc',
+    providerUrl: $_ENV['OIDC_ISSUER'],
+    clientId: $_ENV['OIDC_CLIENT_ID'],
+    clientSecret: $_ENV['OIDC_CLIENT_SECRET'],
+    redirectUri: $_ENV['OIDC_REDIRECT_URI'],
+    scopes: ['profile', 'email'],
 );

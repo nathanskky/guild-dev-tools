@@ -21,6 +21,8 @@ final class TestDatabase
 {
     private static ?Capsule $capsule = null;
 
+    private static bool $seeded = false;
+
     private function __construct()
     {
     }
@@ -58,6 +60,21 @@ final class TestDatabase
     public static function begin(): void
     {
         self::connectionOf(self::capsule())->beginTransaction();
+        self::$seeded = false;
+    }
+
+    /**
+     * True the first time it is asked after begin(), so the roster's grants
+     * are seeded once per test. Seeding again would reactivate a grant the
+     * test revoked.
+     */
+    public static function seedOnce(): bool
+    {
+        if (self::$seeded) {
+            return false;
+        }
+
+        return self::$seeded = true;
     }
 
     /**
