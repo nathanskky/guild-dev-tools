@@ -1,0 +1,9 @@
+/AGENTS.md export-ignore
+/CLAUDE.md export-ignore
+/internals export-ignore
+/tests export-ignore
+/phpunit.xml.dist export-ignore
+/phpstan.neon export-ignore
+/pint.json export-ignore
+/.gitignore export-ignore
+/.gitattributes export-ignore

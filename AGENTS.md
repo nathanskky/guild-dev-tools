@@ -1,104 +1,40 @@
-# AGENTS.md
+# AGENTS.md: guild/dev-tools
 
-Guidance for AI coding agents (and new humans) working in this repository.
+Cross-repo workflow and conventions: [workspace handbook](../AGENTS.md).
 
-## What this is
+This repo is `guild/dev-tools`: persona sign-in and its feature-test kit, a `guild-extension` that apps
+install with `require-dev`. App-facing behaviour is documented in [docs/index.md](docs/index.md).
 
-`guild/dev-tools` adds persona sign-in to Guild applications for local development and tests. Namespace
-`Guild\DevTools\`, autoloaded from `src/`. It is a `guild-extension` Composer package: `guild/framework`
-discovers it and calls `PersonaSignInExtension`. Read `README.md` for what it does from an application's side.
+## Verify
 
-- **PHP:** `~8.5.0`
-- **Remote:** `git@github.com:nathanskky/guild-dev-tools.git` (SSH), or
-  `https://github.com/nathanskky/guild-dev-tools.git` if you don't have SSH keys set up
-- **Current release:** `1.0.0`
-- **Default branch:** `develop`. Work targets `develop`; see [Branching and releases](#branching-and-releases).
-- **`composer.lock` is gitignored** here, so there is no lock to keep in sync.
-- **Requires `guild/framework` `^2.1`.** dev-tools majors track framework majors.
+- `composer install`
+- `composer check` runs PHPUnit, then PHPStan level 10 over `src/`, then Pint; all three must pass.
+- `php bin/check-docs dev-tools`, from the workspace root, after any change to README, `docs/` or `internals/`.
 
-## Verify your change
+## Keeping docs current
 
-```bash
-composer install
-composer check   # PHPUnit, then PHPStan level 10 over src/, then Pint (PSR-12)
-```
+A change to public behaviour updates the page `docs/index.md` lists for it, in the same commit; a
+non-obvious choice gets a decision record in `docs/decisions/`.
 
-All three are green on a clean checkout. Keep them green.
-
-`phpunit.xml.dist` is strict: every test class needs `#[CoversClass]` (with `#[UsesClass]` for
-collaborators) or `#[CoversNothing]` for an acceptance test, and risky tests, warnings and PHPUnit
-deprecations fail the run. Test classes live under `Guild\DevTools\Test\`.
-
-**No PHPUnit mocks.** The doubles are the framework's `Testing\ArraySessionStore`, `Testing\FrameworkSchema`
-(the real migrations on in-memory SQLite) and `Testing\GroupDirectoryContract`, plus Monolog's `TestHandler`.
-`tests/Fixture/app` is a small application whose `config/app.php` discovers this package as an extension; the
-acceptance test and `tests/Testing` visit it with this package's own test kit. `tests/Fixture/persona-off` is
-an IU Login application shaped like guild/starter's (settings from `$_ENV`) with persona sign-in off, and
-`tests/Fixture/not-an-app` a broken `config/app.php`.
-
-Tests name the fixture application's personas, groups and role through `tests/Support/FixtureRoster`, and its
-permissions through `FixturePermission`. Renaming fixture data is then one edit, and a test that missed it fails
-to find it. A test that builds its own roster keeps its own values, as class constants where it repeats them.
-
-A negative assertion keyed on a string (`assertDontSee`, `assertStringNotContainsString`,
-`assertFalse(…->exists())`) is paired, in the same test, with a positive assertion on that string. On its own it
-would still pass after a rename, because the old string is absent everywhere.
-
-`phpunit.xml.dist` forces `PERSONA_SIGN_IN_ENABLED` on and both secrets blank for every test, as an
-application's would. Tests of the extension itself pass their environment to `PersonaSignInExtension`
-explicitly.
-
-## Layout
-
-- `PersonaSignInExtension` — reads the environment, refuses real credentials, loads `config/personas.php`,
-  chooses the framework's three slots in `configure()`, binds its services in `boot()`
-- `Persona\` — the roster's value objects: `PersonaKey`, `Persona`, `PersonaGroup`, `RoleGrant`,
-  `DirectoryStatus`, `PersonaRoster`
-- `SignIn\` — `PersonaSignIn` (the `SignInMethod`), `PersonaGroupDirectory` (the `GroupDirectory`),
-  and their session state `SignedInPersona` and `DirectoryOutage`; `LocalHost`; `ReturnPath`, the one rule for
-  where a visitor may be sent back to
-- `Grant\` — `PersonaGrantSeeder`
-- `Picker\` — the persona picker at `/_dev/personas`: `PersonaPickerController`, `PersonaPickerPage` (its
-  markup), `RequireLocalHost`; and `PersonaBanner`, the middleware that puts the banner on every HTML page
-- `Testing\` — the test kit: `VisitsApplication` (trait for test cases), `Visit`, `VisitResponse` (API), and
-  `ApplicationUnderTest`, `TestDatabase` (internal)
+Public behaviour here includes the roster's arguments and rules, the picker and banner text, the
+environment variables, boot failure messages, and every `Testing\` method an app calls.
 
 ## Conventions
 
-- `final readonly` classes with constructor promotion, `#[\Override]` on interface implementations, and
-  `@internal` on types an application should not use. `Persona` is `final` but not `readonly`, because PHP
-  does not allow its `identity` property hook on a readonly class.
+- Types an app must not use carry `@internal`; keep that marker on anything new that isn't for apps.
 - Every `ConfigurationException` says what is wrong and the one change that fixes it.
-- Session keys are prefixed `guild_dev_tools_`.
+- Session keys start with `guild_dev_tools_`.
+- Docs examples use an app's own namespace, such as `App\Authorization\AppPermission`, never `Guild\Starter\…`.
 
-## Landmines
+## Top landmines
 
-- **The picker renders with its own Rivet renderer**, never the application's: the application's navigation
-  may itself need someone signed in, and the framework's `AdminPage` is internal and titled "Administration".
-- **The picker's routes check the host before the CSRF token** (`RequireLocalHost`, then `VerifyCsrfToken`),
-  so another host gets 404, not the expired-form page.
-- **`PersonaBanner` is prepended to the router** (`lazyPrependMiddleware()`), so it wraps the
-  `AuthorizationFailureResponder` that `addAuthorization()` added first. Appended, it would miss the 403 and
-  503 pages, where a developer most needs to switch persona.
-- **The challenge's return path relies on the PSR-7 URI.** Laminas normalises `//host` paths and encodes
-  backslashes before `PersonaSignIn` sees them; `ReturnPath` refuses both anyway.
-- **Claimed classes must be bound in `boot()`.** The framework checks at `create()` that the container can
-  build each chosen class, and builds nothing there, so a test can still override `SessionStore` afterwards.
+- `PersonaBanner` must stay prepended, or it misses the 403 and 503 pages; see [extension wiring](internals/extension-wiring.md#middleware-order).
+- Bind claimed classes in `boot()`, never `configure()`; see [extension wiring](internals/extension-wiring.md#binding-in-boot).
+- Factories must resolve `PersonaRoster` from the container, or inline test personas vanish; see [extension wiring](internals/extension-wiring.md#binding-in-boot).
+- The test kit seeds grants once per test, not per request; see [testing](internals/testing.md#test-kit-landmines).
+- The flag accepts `1` because PHPUnit writes `true` as `1`; see [extension wiring](internals/extension-wiring.md#environment).
 
-- **PHPUnit writes `<env value="true">` as `1`.** Any spelling of `true` in `phpunit.xml` reaches PHP as `'1'`,
-  so the extension accepts `1` as well as `true`.
-- **The test kit loads the application once per request**, not once per visit, so nothing one request
-  resolved leaks into the next. Only the session (per visit) and the database (per test) carry over.
-- **The test kit seeds grants once per test**, on the first request after the transaction opens. Seeding on
-  every request would reactivate a grant a test revoked.
-- **The test kit has no clock.** The framework passes `time(...)` to `MembershipProvider`, and each visit
-  starts with an empty session, so the membership TTL never expires inside a test.
-- **The test kit reads persona mode from the framework's claimed sign-in slot.** Resolving `SignInMethod`
-  instead would build `PersonaSignIn` with the roster before an inline persona joins it.
-- **PHPStan does not analyse `VisitsApplication`**, because only tests use it (`trait.unused` is ignored in
-  `phpstan.neon`). Keep the trait to one-line delegations.
+## Internals — read when
 
-## Branching and releases
-
-Feature work targets `develop`; `main` is the released state, and tags are applied to `main`. This is the
-model across the Guild packages.
+- [internals/extension-wiring.md](internals/extension-wiring.md) — read when changing `PersonaSignInExtension`, the picker, the banner, sign-out or the grant seeder.
+- [internals/testing.md](internals/testing.md) — read when writing tests here or changing `src/Testing/`.
