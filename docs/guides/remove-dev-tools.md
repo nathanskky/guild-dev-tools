@@ -8,7 +8,7 @@ your app signs in only through IU Login, locally as well as in production.
 ## Before you start
 
 Your app's stack must start with `docker/up-iu-services.sh`. That script needs the 1Password setup that
-starter's [README](https://github.com/nathanskky/guild-starter) describes.
+starter's [Manage secrets](https://github.com/nathanskky/guild-starter/blob/main/docs/guides/manage-secrets.md) describes.
 
 ## Remove the package
 

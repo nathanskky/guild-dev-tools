@@ -45,7 +45,7 @@ the picker. The banner then shows `Grouper outage simulated`.
 The outage applies to your browser session, whoever you sign in as. Membership the framework has already
 cached keeps answering, as it would in production, so a page fails only once that cache runs out. To see
 the 503 page sooner, lower `membershipTtl` in `config/authorization.php`; the
-[framework README](https://github.com/nathanskky/guild-framework/blob/main/README.md#setting-it-up) describes it.
+framework's [Set up authorization](https://github.com/nathanskky/guild-framework/blob/main/docs/guides/set-up-authorization.md#choose-the-cache-and-timeout-settings) describes it.
 
 To end the outage, select **End the Grouper outage**.
 

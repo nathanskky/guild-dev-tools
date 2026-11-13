@@ -7,7 +7,7 @@ one is on.
 
 Your app already has dev-tools, a starting roster in `config/personas.php`, and the `phpunit.xml.dist`
 lines that turn persona sign-in on for tests. The start scripts on this page are part of your app.
-starter's [README](https://github.com/nathanskky/guild-starter) describes what each script needs.
+starter's [Run locally](https://github.com/nathanskky/guild-starter/blob/main/docs/start/run-locally.md) describes what each script needs.
 
 ## Turn it on
 

@@ -71,15 +71,15 @@ roster doesn't remove its rows, though: they stay active until an administrator 
 
 The framework's membership cache sits in front of the persona group directory, as it does in front of
 Grouper. A simulated Grouper outage therefore behaves like a real one: the app uses cached membership
-first, then stale membership, and then shows the 503 page. The framework README's
-[authorization setup](https://github.com/nathanskky/guild-framework/blob/main/README.md#setting-it-up)
-lists the settings that control the cache.
+first, then stale membership, and then shows the 503 page. The framework's
+[Authorization](https://github.com/nathanskky/guild-framework/blob/main/docs/concepts/authorization.md#membership-cache) concept page lists the settings that
+control the cache.
 
 ## Enabling persona sign-in
 
 dev-tools is a Composer package of type `guild-extension`, so the framework finds it at boot without any
-change to `config/app.php`. The framework README describes
-[extensions](https://github.com/nathanskky/guild-framework/blob/main/README.md#extensions). The extension
+change to `config/app.php`. The framework's [Extensions](https://github.com/nathanskky/guild-framework/blob/main/docs/concepts/extensions.md) page explains
+how it finds them. The extension
 does nothing while `PERSONA_SIGN_IN_ENABLED` is off. While it's on, the app doesn't read
 `config/authentication.php` or `config/grouper.php`, and the roster's System Admin group replaces the label
 in `config/authorization.php`.

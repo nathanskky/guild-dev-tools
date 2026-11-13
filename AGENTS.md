@@ -5,7 +5,7 @@
 The [workspace handbook](../AGENTS.md) covers cross-repo workflow and conventions.
 
 guild/dev-tools provides persona sign-in and its feature-test kit. It's a framework
-[extension](https://github.com/nathanskky/guild-framework/blob/main/README.md#extensions) of type
+[extension](https://github.com/nathanskky/guild-framework/blob/main/docs/concepts/extensions.md) of type
 `guild-extension`, and apps install it with `require-dev`.
 
 ## Verify
