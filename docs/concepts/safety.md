@@ -29,25 +29,27 @@ When all four pass, persona sign-in runs, with the banner and the log.
 
 </details>
 
-Persona sign-in lets anyone become anyone, so it's built in layers. The first three layers each keep it
-out of production on their own. The rest limit what it can do where it does run.
+Persona sign-in lets anyone sign in as any persona, with that persona's groups and grants, and no
+password. Several independent safeguards protect it. Each of the first three keeps persona sign-in out of
+production on its own. The other four limit what persona sign-in can do where it runs.
 
-| Layer | What it does |
+| Safeguard | What it does |
 |---|---|
-| Absent from production | Installed with `require-dev`, so a `--no-dev` build doesn't contain it. |
-| Off unless chosen | Inactive unless `PERSONA_SIGN_IN_ENABLED` is `true` or `1`. |
+| Not installed in production | Installed with `require-dev`, so a `--no-dev` build doesn't contain it. |
+| Off by default | Inactive unless `PERSONA_SIGN_IN_ENABLED` is `true` or `1`. |
 | Refuses real credentials | Boot fails if `OIDC_CLIENT_SECRET` or `GROUPER_PASSWORD` is set while it's on. |
 | Local hosts only | Sign-in and the picker answer only on `localhost`, `127.0.0.1` or `::1`; other hosts get 404 and no banner. |
-| Visible | A banner on every full HTML page (one with a `<body>` tag) says who you're signed in as. |
-| Session hygiene | The session ID and CSRF token are replaced on every switch and sign-out. |
-| Audited | Each switch and sign-out is logged at `notice` with the persona's key, as is each outage toggle. |
+| Banner | A banner on every full HTML page (a page with a `<body>` tag) says who you're signed in as. |
+| Session renewal | The session ID and CSRF token are replaced on every switch and sign-out. |
+| Logging | Each switch, sign-out and outage toggle is logged at `notice` with the persona's key. |
 
-The host check reads the request's `Host` header, which the client controls. So it stops accidents, not a
-crafted request; keeping the package out of production builds stops those.
+The host check reads the request's `Host` header, which the client controls, so a crafted request can
+pass it. The host check guards against mistakes. Against a crafted request, the protection is that
+production builds don't contain the package.
 
-Refusing real credentials covers the likeliest mistake. A stack with IU Login or Grouper secrets is set up
-for real users, so persona sign-in won't start beside them. A secret counts as set if it's
-non-blank in either the process environment or `$_ENV`.
+The credentials check covers the most likely mistake: turning on the persona flag in an environment set
+up for real users. Such an environment has IU Login or Grouper secrets, so persona sign-in refuses to
+start there.
 
 ## Related
 

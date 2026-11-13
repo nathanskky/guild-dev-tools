@@ -2,11 +2,11 @@
 
 > For maintainers of guild/dev-tools and their agents. App developers start at [docs/index.md](docs/index.md).
 
-Cross-repo workflow and conventions: [workspace handbook](../AGENTS.md).
+The [workspace handbook](../AGENTS.md) covers cross-repo workflow and conventions.
 
-This repo is `guild/dev-tools`: persona sign-in and its feature-test kit, a framework
+guild/dev-tools provides persona sign-in and its feature-test kit. It's a framework
 [extension](https://github.com/nathanskky/guild-framework/blob/main/README.md#extensions) of type
-`guild-extension` that apps install with `require-dev`.
+`guild-extension`, and apps install it with `require-dev`.
 
 ## Verify
 
@@ -58,4 +58,4 @@ after a rename, because the old string is absent everywhere.
 - The test kit seeds grants once per test, not per request.
 - The flag accepts `1` because PHPUnit writes `true` as `1`.
 
-A comment at each one's code gives the reason.
+The comment at each gotcha's code explains the reason.

@@ -7,12 +7,12 @@ your app signs in only through IU Login, locally as well as in production.
 
 ## Before you start
 
-- Your app's stack can start with `docker/up-iu-services.sh`, which needs the 1Password setup starter's
-  [README](https://github.com/nathanskky/guild-starter) describes.
+Your app's stack must start with `docker/up-iu-services.sh`. That script needs the 1Password setup that
+starter's [README](https://github.com/nathanskky/guild-starter) describes.
 
 ## Remove the package
 
-1. Remove the package:
+1. Remove the package with Composer:
 
    ```bash
    composer remove --dev guild/dev-tools
@@ -28,18 +28,19 @@ your app signs in only through IU Login, locally as well as in production.
    `GROUPER_PASSWORD` lines inside `<php>`, and the comment above them.
 
 5. Rewrite or delete each test that uses the `VisitsApplication` trait or another `Guild\DevTools` class.
-   Nothing else provides them.
+   Those classes are no longer installed.
 
 6. Delete `docker/up-personas.sh`. In `docker/docker-compose.yml`, delete the `PERSONA_SIGN_IN_ENABLED`
    line and the comment above it.
 
-   Both turn the persona flag on. With the flag on and dev-tools gone, `config/authentication.php`
-   refuses to boot.
+   Both set the persona flag. If the flag is set after dev-tools is removed, `config/authentication.php`
+   stops the app at boot.
 
 7. Delete the persona sign-in check at the top of `config/authentication.php`, and the test in
-   `tests/Configuration/AuthenticationConfigTest.php` that expects its message. Nothing turns the flag on
-   now.
+   `tests/Configuration/AuthenticationConfigTest.php` that expects its message. Nothing sets the flag
+   anymore, so the check has no purpose.
 
 8. From now on, start the stack with `docker/up-iu-services.sh`.
 
-To check, run `composer test`, then start the stack: no page shows the persona banner.
+To confirm the removal, run `composer test`, then start the stack and check that no page shows the persona
+banner.

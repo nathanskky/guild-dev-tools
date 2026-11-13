@@ -6,8 +6,8 @@ When you finish, you can switch your local app between persona sign-in and real 
 one is on.
 
 Your app already has dev-tools, a starting roster in `config/personas.php`, and the `phpunit.xml.dist`
-lines that turn persona sign-in on for tests. The start scripts below belong to your app; starter's
-[README](https://github.com/nathanskky/guild-starter) describes what each one needs.
+lines that turn persona sign-in on for tests. The start scripts on this page are part of your app.
+starter's [README](https://github.com/nathanskky/guild-starter) describes what each script needs.
 
 ## Turn it on
 
@@ -17,7 +17,7 @@ lines that turn persona sign-in on for tests. The start scripts below belong to 
    docker/up-personas.sh
    ```
 
-   Every full HTML page, one with a `<body>` tag, now opens with a banner that reads
+   Every full HTML page (a page with a `<body>` tag) now opens with a banner that reads
    `Persona sign-in: not signed in`.
 
 2. Open `https://localhost:8443/_dev/personas` and choose **Sign in as Erin Editor**.
@@ -26,18 +26,18 @@ lines that turn persona sign-in on for tests. The start scripts below belong to 
 
 ## Turn it off
 
-1. Stop the stack, then start it with real IU Login and Grouper:
+To switch back to real IU Login and Grouper, stop the stack and start it with the other script:
 
-   ```bash
-   docker/up-iu-services.sh
-   ```
+```bash
+docker/up-iu-services.sh
+```
 
-   The banner is gone, and signing in goes through IU Login.
+The banner no longer appears, and signing in goes through IU Login.
 
 ## Tests
 
-Your tests always run with persona sign-in on, whichever script started the stack, because
-`phpunit.xml.dist` turns it on with `force="true"`.
+Your tests always run with persona sign-in on, regardless of which script started the stack.
+`phpunit.xml.dist` sets the persona flag with `force="true"`.
 
 ## Next
 

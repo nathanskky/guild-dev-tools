@@ -20,5 +20,4 @@
 dev-tools is a framework [extension](https://github.com/nathanskky/guild-framework/blob/main/README.md#extensions).
 
 framework also uses the word "claim", for an extension's choice of a framework service such as the
-sign-in method. That's a different concept from an IU Login claim; this package's docs use "claim" only
-for IU Login claims.
+sign-in method. This package's docs use "claim" only for an IU Login claim.

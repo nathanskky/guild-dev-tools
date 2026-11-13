@@ -2,7 +2,7 @@
 
 > For app developers using persona sign-in and its test kit.
 
-New to the terms? The [glossary](reference/glossary.md) defines persona, roster and the rest.
+The [glossary](reference/glossary.md) defines persona, roster and the other terms these pages use.
 
 ## Start
 
@@ -17,7 +17,7 @@ New to the terms? The [glossary](reference/glossary.md) defines persona, roster 
 
 ## Concepts
 
-- [How persona sign-in works](concepts/how-persona-sign-in-works.md) — read when you need to know what's faked and what's real.
+- [How persona sign-in works](concepts/how-persona-sign-in-works.md) — read when you need to know what persona sign-in replaces.
 - [Safety](concepts/safety.md) — read when checking that persona sign-in can't reach production.
 
 ## Reference
