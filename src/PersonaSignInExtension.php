@@ -89,7 +89,10 @@ final class PersonaSignInExtension implements ApplicationExtension
             return;
         }
 
-        // Every factory resolves the roster, so a test that overrides it reaches all of them.
+        // Bound here, not in configure(): create() only checks that the container has() the
+        // sign-in method and group directory, so tests can replace SessionStore first.
+        // Every factory resolves PersonaRoster from the container, never $roster, because
+        // ApplicationUnderTest replaces the roster after boot to add an inline test persona.
         $app->addShared(PersonaRoster::class, $roster);
         $app->addShared(SignedInPersona::class, static fn (): SignedInPersona => new SignedInPersona(self::service($app, SessionStore::class)));
         $app->addShared(DirectoryOutage::class, static fn (): DirectoryOutage => new DirectoryOutage(self::service($app, SessionStore::class)));
@@ -131,13 +134,16 @@ final class PersonaSignInExtension implements ApplicationExtension
 
         $router = self::service($app, Router::class);
         self::mountPicker($router);
-        // Prepended, so it wraps the AuthorizationFailureResponder that addAuthorization() already added.
+        // Prepended, so it wraps the AuthorizationFailureResponder that addAuthorization() already
+        // added and shows on the 403 and 503 pages, where a developer most needs to switch persona.
+        // tests/Picker/PersonaBannerRoutesTest.php checks both.
         $router->lazyPrependMiddleware(PersonaBanner::class);
     }
 
     /**
      * The picker's routes under /_dev/personas. The host check runs before
      * the CSRF check, so another host gets 404, never the expired-form page.
+     * No test pins this order.
      */
     private static function mountPicker(Router $router): void
     {

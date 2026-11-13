@@ -23,6 +23,11 @@ use Throwable;
  * visit, and swaps in the visit's session and request, the test database
  * and a silent logger before anything resolves them.
  *
+ * A fresh application per request means nothing one request resolved leaks
+ * into the next; only the session (per visit) and the database (per test)
+ * carry over. The kit has no clock: the framework passes time(...) to
+ * MembershipProvider, so the membership TTL never expires inside a test.
+ *
  * @internal
  */
 final class ApplicationUnderTest

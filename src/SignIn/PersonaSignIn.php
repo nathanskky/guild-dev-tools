@@ -92,6 +92,11 @@ final readonly class PersonaSignIn implements SignInMethod
         return new RedirectResponse(self::PICKER_PATH . '?return=' . rawurlencode(self::returnTarget($request)));
     }
 
+    /**
+     * Regenerates the session ID but leaves the CSRF token alone: the
+     * framework's SignOutController rotates it after this returns. The
+     * safety page in docs/concepts/ relies on both.
+     */
     #[Override]
     public function signOut(ServerRequestInterface $request): ResponseInterface
     {

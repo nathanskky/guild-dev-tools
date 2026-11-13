@@ -57,6 +57,7 @@ final class PersonaPickerPage
      */
     public function render(?Persona $current, string $return, bool $outageOn, ?string $notice = null, ?string $error = null): string
     {
+        // Its own Renderer, never the app's: the app's navigation may need someone signed in.
         $renderer = $this->renderer ??= new Renderer(
             Rivet::registry(),
             pageDefaults: new PageDefaults(appTitle: self::TITLE, homeHref: PersonaSignIn::PICKER_PATH),

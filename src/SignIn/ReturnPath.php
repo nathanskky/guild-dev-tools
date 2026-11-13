@@ -10,6 +10,9 @@ namespace Guild\DevTools\SignIn;
  * challenge's target and again to whatever the picker is handed, since a
  * ?return= or a posted form field can say anything.
  *
+ * Laminas already normalizes '//host' paths and encodes backslashes before
+ * PersonaSignIn sees them; keep these checks anyway.
+ *
  * @internal
  */
 final class ReturnPath

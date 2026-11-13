@@ -14,12 +14,12 @@ This repo is `guild/dev-tools`: persona sign-in and its feature-test kit, a fram
 
 ## Keeping docs current
 
-Every code change gets a docs check in the same commit. Check README, `docs/`, AGENTS.md, `internals/`
-and the docblocks of public classes for anything the change makes wrong or incomplete:
+Every code change gets a docs check in the same commit. Check README, `docs/`, AGENTS.md, the docblocks
+of public classes and the comments at the changed code for anything the change makes wrong or incomplete:
 
 - Update a page that describes the changed behavior.
 - If no page covers new public behavior, add one to `docs/` and list it in `docs/index.md`.
-- If a new maintainer fact needs a page, add it to `internals/` and list it below.
+- If a maintainer needs a fact the code doesn't show, add a comment where the code is.
 - If the behavior is gone, remove its page and its index entry.
 - If the change adds or renames a domain term, update `docs/reference/glossary.md`.
 
@@ -37,15 +37,25 @@ classes and the test kit keep their API reference in docblocks, so a change to t
 - Session keys start with `guild_dev_tools_`.
 - Docs examples use an app's own namespace, such as `App\Authorization\AppPermission`, never `Guild\Starter\…`.
 
+## Tests
+
+- Don't use PHPUnit mocks or stubs; use the framework's `Testing\` fakes and Monolog's `TestHandler`.
+- Give each test class `#[CoversClass]` plus `#[UsesClass]`, or `#[CoversNothing]` for an acceptance test.
+- Put test classes under `Guild\DevTools\Test\`.
+- Name fixture personas, groups and the role through `tests/Support/FixtureRoster`, and permissions through `FixturePermission`.
+- Pass the environment to `PersonaSignInExtension`'s constructor, never through `putenv()`.
+- A test that needs the flag off saves and restores it, as `PersonaSignInOffTest` does.
+- Pair each negative string assertion with a positive one on the same string, in the same test.
+
+`putenv()` changes the environment for the whole PHPUnit process. A negative assertion alone still passes
+after a rename, because the old string is absent everywhere.
+
 ## Gotchas
 
-- `PersonaBanner` must stay prepended, or it misses the 403 and 503 pages; see [extension wiring](internals/extension-wiring.md#middleware-order).
-- Bind the classes passed to `useSignInMethod()` and `useGroupDirectory()` in `boot()`, never `configure()`; see [extension wiring](internals/extension-wiring.md#binding-in-boot).
-- Factories must resolve `PersonaRoster` from the container, or inline test personas vanish; see [extension wiring](internals/extension-wiring.md#binding-in-boot).
-- The test kit seeds grants once per test, not per request; see [testing](internals/testing.md#test-kit-gotchas).
-- The flag accepts `1` because PHPUnit writes `true` as `1`; see [extension wiring](internals/extension-wiring.md#environment).
+- `PersonaBanner` must stay prepended, or it misses the 403 and 503 pages.
+- Bind the classes passed to `useSignInMethod()` and `useGroupDirectory()` in `boot()`, never `configure()`.
+- Factories must resolve `PersonaRoster` from the container, or inline test personas vanish.
+- The test kit seeds grants once per test, not per request.
+- The flag accepts `1` because PHPUnit writes `true` as `1`.
 
-## Internals — read when
-
-- [internals/extension-wiring.md](internals/extension-wiring.md) — read when changing `PersonaSignInExtension`, the picker, the banner, sign-out or the grant seeder.
-- [internals/testing.md](internals/testing.md) — read when writing tests here or changing `src/Testing/`.
+A comment at each one's code gives the reason.
