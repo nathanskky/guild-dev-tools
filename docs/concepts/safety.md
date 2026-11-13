@@ -4,6 +4,7 @@
 
 ```mermaid
 flowchart TD
+  accTitle: The checks persona sign-in passes before it runs
   B{"Installed?<br/>require-dev only"} -->|"no: production build"| X1["No persona sign-in"]
   B -->|yes| F{"PERSONA_SIGN_IN_ENABLED<br/>true or 1?"}
   F -->|no| X2["IU Login and Grouper, as usual"]
@@ -13,6 +14,20 @@ flowchart TD
   H -->|no| X4["404"]
   H -->|yes| OK["Persona sign-in,<br/>with banner and log"]
 ```
+
+<details>
+<summary>Diagram as text</summary>
+
+Persona sign-in runs only after four checks, in this order:
+
+1. Is dev-tools installed? It's a `require-dev` package, so a production build has no persona sign-in.
+2. Is `PERSONA_SIGN_IN_ENABLED` `true` or `1`? If not, the app uses IU Login and Grouper as usual.
+3. Is `OIDC_CLIENT_SECRET` or `GROUPER_PASSWORD` set? If so, boot fails.
+4. Is the request's host local? If not, the request gets a 404.
+
+When all four pass, persona sign-in runs, with the banner and the log.
+
+</details>
 
 Persona sign-in lets anyone become anyone, so it's built in layers. The first three layers each keep it
 out of production on their own. The rest limit what it can do where it does run.
@@ -36,5 +51,6 @@ non-blank in either the process environment or `$_ENV`.
 
 ## Related
 
-- [Environment reference](../reference/environment.md) lists the variables and the values each accepts.
+- [Environment variables](../reference/environment-variables.md) lists the variables and the values each accepts.
+- [Boot failures](../reference/boot-failures.md) lists what each refusal to boot says.
 - [How persona sign-in works](how-persona-sign-in-works.md) shows what persona sign-in replaces.

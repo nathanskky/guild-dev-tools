@@ -13,13 +13,20 @@ use Guild\Framework\Model\RolePermission;
 
 /**
  * Writes the roster's role grants into the framework's grant tables, through
- * the same Eloquent models the administration pages use.
+ * the same Eloquent models the administration pages use. Runs when the
+ * persona picker loads and on a test's first request, never on an ordinary
+ * request.
  *
- * It inserts or reactivates, by group identifier, role name and permission,
- * and never deletes or detaches, so grants a developer adds through
- * /framework/authorization survive. A group the developer renamed keeps its
- * name. Runs when the persona picker loads and before each test visit, never
- * on an ordinary request.
+ * Rows are matched by group identifier, role name and permission value:
+ *
+ * - A missing row is inserted active, with created_by set to ACTOR.
+ * - An inactive row is reactivated, with updated_by set to ACTOR.
+ * - An active row is left untouched, so a group the developer renamed keeps its name.
+ * - A row the roster doesn't name is left as it is; nothing is deleted or detached.
+ *
+ * Group names are unique, so a new group whose label another group already
+ * uses is named by its identifier instead. With no grants, it writes nothing
+ * and doesn't touch the database.
  */
 final readonly class PersonaGrantSeeder
 {

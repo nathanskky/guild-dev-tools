@@ -4,6 +4,7 @@
 
 ```mermaid
 flowchart LR
+  accTitle: What persona sign-in replaces and what stays real
   subgraph off["Not used while persona sign-in is on"]
     IU["IU Login"]
     GR["Grouper"]
@@ -33,22 +34,35 @@ flowchart LR
   GA --> PO
 ```
 
-A Guild app asks two outside services two questions: IU Login says who you are, and Grouper says which
-groups you're in. Persona sign-in answers both from your roster instead. It fills the framework's
-sign-in method and group directory slots, and nothing else.
+<details>
+<summary>Diagram as text</summary>
 
-Everything after those two answers is your app's real code. The framework caches your groups in the
-session, maps them to roles and permissions through the grant tables, and the Gate and your policies
-decide. So a page that works for a persona works for a real user in the same Grouper groups. That holds
-as long as the roster names the real groups.
+While persona sign-in is on, your app doesn't use IU Login or Grouper. The sign-in method `PersonaSignIn`
+replaces IU Login, and you reach it through the persona picker at `/_dev/personas`. The group directory
+`PersonaGroupDirectory` replaces Grouper. Both read the roster in `config/personas.php`, and the roster
+also seeds the grant tables.
+
+Everything after that is your app's real code, from guild/framework. The sign-in method says who you are
+and the group directory says which groups you're in, and both answers go to the membership cache. The Gate
+reads the cache and the grant tables, which map your groups to roles and permissions, and your policies
+decide. So a page that works for a persona works for a real user in the same Grouper groups, as long as
+the roster names the real groups.
+
+</details>
+
+A Guild app gets two answers from outside services: who you are, from IU Login, and which groups you're
+in, from Grouper. Persona sign-in gives both answers from your roster instead.
 
 ## Grants come from the roster
 
 The roster's `grants:` are written into the framework's grant tables by the same models the
-administration pages use. This happens when the picker opens and, in tests, once per test. The writer
-adds and reactivates rows but never deletes them, so a grant you add at `/framework/authorization`
-survives. The trade-off is that removing a grant from the roster leaves its rows in place and active
-until an administrator deactivates them at `/framework/authorization`.
+administration pages use. This happens when the picker opens and, in tests, on each test's first request.
+With no `grants:`, nothing is written and the database isn't touched.
+
+Rows are matched by group identifier, role name and permission value. A missing row is added and an
+inactive one reactivated, but nothing is deleted or detached, and a group you renamed keeps its name. So a
+grant you add at `/framework/authorization` survives. The trade-off is that removing a grant from the
+roster leaves its rows in place and active until an administrator deactivates them there.
 
 ## The membership cache is real too
 
@@ -76,5 +90,5 @@ the Gate and your policies all run as they do in the browser.
 ## Related
 
 - [Safety](safety.md) explains what keeps persona sign-in out of production.
-- [Roster reference](../reference/roster.md) and [test kit reference](../reference/test-kit.md) list the
-  details.
+- [Glossary](../reference/glossary.md) defines persona, roster and the other terms on this page.
+- `PersonaRoster`, `PersonaGrantSeeder` and `VisitsApplication` document their details in their docblocks.

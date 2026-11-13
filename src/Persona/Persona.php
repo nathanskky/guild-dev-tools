@@ -31,8 +31,15 @@ final class Persona
     }
 
     /**
-     * @param  list<PersonaGroup>  $groups
-     * @param  array<string, string>  $attributes  Further IU Login claims, e.g. 'email'.
+     * @param  string|PersonaKey  $key  The name signedInAs() and the session use; PersonaKey gives the format.
+     * @param  string  $username  The username claim. Trimmed; must not be blank.
+     * @param  string  $name  The name claim, shown on the picker and banner. Trimmed; must not be blank.
+     * @param  list<PersonaGroup>  $groups  The Grouper groups the persona is in.
+     * @param  DirectoryStatus  $directory  Unavailable makes Grouper unreachable for this persona.
+     * @param  array<string, string>  $attributes  Further IU Login claims, e.g. 'email', used as given.
+     *                                             Must not contain 'username' or 'name'.
+     *
+     * @throws ConfigurationException When the key, a blank value or a reserved attribute breaks a rule above.
      */
     public function __construct(
         string|PersonaKey $key,

@@ -7,8 +7,13 @@ goes through your app's real router, Gate and grants.
 
 ## Before you start
 
-- `phpunit.xml.dist` turns persona sign-in on; if it doesn't, follow step 7 of
-  [Turn on persona sign-in](../start/turn-on-persona-sign-in.md).
+- `phpunit.xml.dist` turns persona sign-in on, as starter's does, with these lines inside `<php>`:
+
+  ```xml
+  <env name="PERSONA_SIGN_IN_ENABLED" value="true" force="true"/>
+  <env name="OIDC_CLIENT_SECRET" value="" force="true"/>
+  <env name="GROUPER_PASSWORD" value="" force="true"/>
+  ```
 - `config/personas.php` returns your roster; to write one, follow [Write the roster](write-the-roster.md).
 
 ## Write the test
@@ -48,8 +53,9 @@ final class ReportsPageTest extends TestCase
 
 These four visits cover a page's everyday cases: allowed, not signed in, not allowed, and Grouper down.
 
-Each test runs in a database transaction that is rolled back afterwards, including rows you write in
-`setUp()`.
+Each test runs in a database transaction that is rolled back afterward, including rows you write in
+`setUp()`. The test database has the framework's tables only; your app's own migrations
+don't run.
 
 ## Submit a form
 
@@ -99,5 +105,5 @@ The test kit visits the app at the Composer root package. To visit another app, 
 
 ## Related
 
-- [Test kit reference](../reference/test-kit.md) lists every method and assertion.
+- `VisitsApplication`, `Visit` and `VisitResponse` document every method and assertion in their docblocks.
 - [How persona sign-in works](../concepts/how-persona-sign-in-works.md) explains what each request loads.

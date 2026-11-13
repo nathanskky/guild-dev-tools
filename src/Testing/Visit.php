@@ -23,7 +23,12 @@ use NoDiscard;
  *
  * Each request loads the application afresh from config/app.php, as a real
  * request would; the session carries across the visit's requests, and the
- * database across the whole test.
+ * database across the whole test. Two visits have separate sessions.
+ * withHeaders() and duringDirectoryOutage() return a copy with a copy of the
+ * session as it is then, and leave the original unchanged.
+ *
+ * An exception the application doesn't handle fails the test with that
+ * exception; it isn't turned into a 500 response.
  */
 final readonly class Visit
 {
@@ -67,7 +72,12 @@ final readonly class Visit
     }
 
     /**
-     * @param  string  $uri  A path on this site, or an absolute URL to visit another host.
+     * Send a GET.
+     *
+     * @param  string  $uri  A path starting with '/', sent to http://localhost, or an absolute URL, sent as given.
+     *
+     * @throws ConfigurationException When persona sign-in is off, config/app.php is missing, or the visit's
+     *                                 persona key isn't in config/personas.php.
      */
     public function get(string $uri): VisitResponse
     {
@@ -75,10 +85,14 @@ final readonly class Visit
     }
 
     /**
-     * Submit a form. The session's CSRF token is filled in unless $data
-     * already has one, so a test can send a wrong token on purpose.
+     * Submit a form: a POST with $data as the form body. The session's CSRF
+     * token is added as _csrf unless $data already has one, so a test can
+     * send a wrong token on purpose.
      *
      * @param  array<string, mixed>  $data
+     *
+     * @throws ConfigurationException When persona sign-in is off, config/app.php is missing, or the visit's
+     *                                 persona key isn't in config/personas.php.
      */
     public function post(string $uri, array $data = []): VisitResponse
     {
@@ -86,7 +100,12 @@ final readonly class Visit
     }
 
     /**
+     * A PUT with $data as the form body, and the CSRF token added as post() adds it.
+     *
      * @param  array<string, mixed>  $data
+     *
+     * @throws ConfigurationException When persona sign-in is off, config/app.php is missing, or the visit's
+     *                                 persona key isn't in config/personas.php.
      */
     public function put(string $uri, array $data = []): VisitResponse
     {
@@ -94,7 +113,12 @@ final readonly class Visit
     }
 
     /**
+     * A DELETE with $data as the form body, and the CSRF token added as post() adds it.
+     *
      * @param  array<string, mixed>  $data
+     *
+     * @throws ConfigurationException When persona sign-in is off, config/app.php is missing, or the visit's
+     *                                 persona key isn't in config/personas.php.
      */
     public function delete(string $uri, array $data = []): VisitResponse
     {

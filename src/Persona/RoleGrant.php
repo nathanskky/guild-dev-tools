@@ -17,8 +17,11 @@ final readonly class RoleGrant
     public string $role;
 
     /**
-     * @param  list<PersonaGroup>  $groups
+     * @param  string  $role  The role name. Trimmed; must not be blank.
+     * @param  list<PersonaGroup>  $groups  The groups mapped to the role.
      * @param  list<Permission>  $permissions  Cases of the application's permission enum.
+     *
+     * @throws ConfigurationException When the role name is blank.
      */
     public function __construct(string $role, public array $groups = [], public array $permissions = [])
     {

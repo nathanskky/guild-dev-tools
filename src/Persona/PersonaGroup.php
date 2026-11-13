@@ -19,6 +19,14 @@ final readonly class PersonaGroup
     /** The ACM label, e.g. 'Starter Editors'; what the System Admin check matches on. */
     public string $label;
 
+    /**
+     * @param  string  $identifier  The Grouper system name, e.g. 'iu:roles:sys:acm:reports-editors'. Grants
+     *                              match on it. Trimmed; must not be blank.
+     * @param  string  $label  The ACM label, e.g. 'Reports Editors'. The System Admin check matches on it.
+     *                         Trimmed; must not be blank.
+     *
+     * @throws ConfigurationException When either value is blank.
+     */
     public function __construct(string $identifier, string $label)
     {
         $this->identifier = trim($identifier);

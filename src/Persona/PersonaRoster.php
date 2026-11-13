@@ -11,17 +11,32 @@ use Guild\Framework\Exception\ConfigurationException;
  * Admin group: what config/personas.php returns. One roster serves local
  * development and tests.
  *
- * Every rule is checked here, so a roster that would behave surprisingly
- * fails at boot with a message naming the persona or group and the fix.
+ * Every roster-wide rule is checked here, so a roster that would behave
+ * surprisingly fails at boot with a message naming the persona or group and
+ * the fix:
+ *
+ * - at least one persona
+ * - each persona has its own key and its own username
+ * - each username starts with $usernamePrefix, unless it is ''
+ * - a group identifier has one label everywhere it appears
+ * - no two group identifiers share a label
+ * - no two grants name the same role
+ *
+ * Persona, PersonaGroup, RoleGrant and PersonaKey check their own values.
  */
 final readonly class PersonaRoster
 {
     /**
-     * @param  list<Persona>  $personas
-     * @param  list<RoleGrant>  $grants
-     * @param  PersonaGroup|null  $systemAdminGroup  Its label becomes the System Admin label in persona mode.
-     * @param  string  $usernamePrefix  Every persona username starts with it, so none is a real IU username.
+     * @param  list<Persona>  $personas  The personas you can sign in as.
+     * @param  list<RoleGrant>  $grants  Roles, the groups mapped to them and their permissions. They are written
+     *                                   to the framework's grant tables when the picker opens and on a test's
+     *                                   first request; see PersonaGrantSeeder.
+     * @param  PersonaGroup|null  $systemAdminGroup  Its label becomes the System Admin label while persona
+     *                                               sign-in is on, in place of config/authorization.php's.
+     * @param  string  $usernamePrefix  Every persona username must start with it, so none is a real IU username.
      *                                  '' turns the check off.
+     *
+     * @throws ConfigurationException When the roster breaks a rule above, naming the persona or group and the fix.
      */
     public function __construct(
         public array $personas,

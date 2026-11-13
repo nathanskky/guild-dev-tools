@@ -20,10 +20,13 @@ Then install it:
 composer require --dev guild/dev-tools
 ```
 
+Your `config/app.php` must call `addAuthentication()`, or the app never uses persona sign-in. If it also
+calls `addAuthorization()`, it must pass `IdentitySource::Oidc`.
+
 ## Start here
 
-[Turn on persona sign-in](docs/start/turn-on-persona-sign-in.md) takes you from install to signing in as
-your first persona.
+[Turn persona sign-in on and off](docs/start/turn-persona-sign-in-on-and-off.md) shows you how to switch
+an app created from guild/starter between personas and IU Login.
 
 ## All docs
 

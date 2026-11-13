@@ -7,7 +7,7 @@ persona for each kind of user, the groups they're in, and the grants those group
 
 ## Before you start
 
-- Persona sign-in is installed; if it isn't, follow [Turn on persona sign-in](../start/turn-on-persona-sign-in.md).
+- Your app has dev-tools; apps created from guild/starter do.
 - Your app has its permission enum, for example `App\Authorization\AppPermission` with `ReportsView` and
   `ReportsEdit` cases.
 - You know the Grouper system name and ACM label of each group your app's grants use in production.
@@ -88,5 +88,5 @@ If the roster breaks a rule, the app refuses to boot, and the error names the pe
 
 ## Related
 
-- [Roster reference](../reference/roster.md) lists every argument and rule.
+- `PersonaRoster`, `Persona`, `PersonaGroup` and `RoleGrant` document every argument and rule in their docblocks.
 - [Test as a persona](test-as-a-persona.md) shows how to add a persona for one test only.

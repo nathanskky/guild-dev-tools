@@ -4,8 +4,7 @@
 
 ## Conventions
 
-- Don't use PHPUnit mocks or stubs.
-- Use the framework's `Testing\ArraySessionStore`, `Testing\FrameworkSchema` and `Testing\GroupDirectoryContract`, and Monolog's `TestHandler`.
+- Don't use PHPUnit mocks or stubs; use the framework's `Testing\ArraySessionStore`, `Testing\FrameworkSchema` and `Testing\GroupDirectoryContract`, and Monolog's `TestHandler`.
 - Give each test class `#[CoversClass]` plus `#[UsesClass]` for collaborators, or `#[CoversNothing]` for an acceptance test.
 - Put test classes under `Guild\DevTools\Test\`.
 - Name the fixture app's personas, groups and role through `tests/Support/FixtureRoster`, and its permissions through `FixturePermission`.
@@ -25,18 +24,26 @@ absent everywhere.
 
 ## Environment
 
-- `phpunit.xml.dist` forces `PERSONA_SIGN_IN_ENABLED` on and both secrets blank for every test, as an app's would.
-- Tests of `PersonaSignInExtension` pass their environment to its constructor explicitly.
-- `PersonaSignInOffTest` clears the flag in `setUp()` and restores it in `tearDown()`; copy that pattern for any test that needs the flag off.
+`phpunit.xml.dist` forces `PERSONA_SIGN_IN_ENABLED` on and both secrets blank for every test, as an app's
+would. Tests of `PersonaSignInExtension` pass their environment to its constructor, not through
+`putenv()`, which would change it for the whole process. `PersonaSignInOffTest` clears the flag in
+`setUp()` and restores it in `tearDown()`; copy that pattern for any test that needs the flag off.
 
-## Test kit landmines
+## Test kit gotchas
 
-- The kit loads the app once per request, not once per visit, so nothing one request resolved leaks into the next.
-- Only the session (per visit) and the database (per test) carry over between requests.
-- The kit seeds grants once per test, on the first request after the transaction opens.
-- Seeding on every request would reactivate a grant the test revoked; `VisitTest::testAGrantRevokedMidTestStaysRevoked` pins this.
-- The kit has no clock: the framework passes `time(...)` to `MembershipProvider`, so the membership TTL never expires inside a test.
-- The kit reads persona mode from `$app->claimedSlots`, not by resolving `SignInMethod`.
-- Resolving `SignInMethod` would build `PersonaSignIn` with the roster before an inline persona joins it.
-- PHPStan doesn't analyse `VisitsApplication`, because only tests use it (`trait.unused` is ignored in `phpstan.neon`).
-- Keep `VisitsApplication` to one-line delegations into `Visit` and `TestDatabase`, which PHPStan does check.
+The kit loads the app once per request, not once per visit, so nothing one request resolved leaks into the
+next. Only the session, per visit, and the database, per test, carry over between requests.
+
+The kit seeds grants once per test, on the first request after the transaction opens. Seeding on every
+request would reactivate a grant the test revoked; `VisitTest::testAGrantRevokedMidTestStaysRevoked` pins
+this.
+
+The kit has no clock. The framework passes `time(...)` to `MembershipProvider`, so the membership TTL
+never expires inside a test.
+
+The kit reads which sign-in method the app chose from `$app->claimedSlots`, not by resolving
+`SignInMethod`. Resolving it would build `PersonaSignIn` with the roster before an inline persona joins it.
+
+PHPStan doesn't analyze `VisitsApplication`, because only tests use it (`trait.unused` is ignored in
+`phpstan.neon`). So keep the trait to one-line delegations into `Visit` and `TestDatabase`, which PHPStan
+does check.

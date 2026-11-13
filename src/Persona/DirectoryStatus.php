@@ -10,6 +10,9 @@ namespace Guild\DevTools\Persona;
  */
 enum DirectoryStatus: string
 {
+    /** Grouper answers with the persona's groups. */
     case Available = 'available';
+
+    /** Grouper is unreachable for this persona. */
     case Unavailable = 'unavailable';
 }

@@ -7,7 +7,7 @@ outage in your browser.
 
 ## Before you start
 
-- Persona sign-in is on; if it isn't, follow [Turn on persona sign-in](../start/turn-on-persona-sign-in.md).
+- Persona sign-in is on; if it isn't, follow [Turn persona sign-in on and off](../start/turn-persona-sign-in-on-and-off.md).
 - You reach the app on `localhost`, `127.0.0.1` or `[::1]`.
 
 On any other host name, persona sign-in answers 404.

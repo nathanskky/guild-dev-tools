@@ -10,13 +10,17 @@ use Psr\Http\Message\ResponseInterface;
 
 /**
  * What the application answered a visit's request, with assertions that
- * name the actual status, redirect target and the start of the body when
- * they fail.
+ * name the actual status, the Location header and the first 500 characters
+ * of the body when they fail. Each assertion returns the response, so
+ * assertions chain.
  */
 final readonly class VisitResponse
 {
     private const int BODY_EXCERPT = 500;
 
+    /**
+     * @param  ResponseInterface  $response  The PSR-7 response, for anything the assertions don't cover.
+     */
     public function __construct(public ResponseInterface $response)
     {
     }
@@ -26,6 +30,9 @@ final readonly class VisitResponse
         return $this->response->getStatusCode();
     }
 
+    /**
+     * The header's values, comma-joined; '' when it is absent.
+     */
     public function header(string $name): string
     {
         return $this->response->getHeaderLine($name);
@@ -57,7 +64,7 @@ final readonly class VisitResponse
     }
 
     /**
-     * A redirect whose Location is exactly $to.
+     * A 3xx status whose Location is exactly $to.
      */
     public function assertRedirect(string $to): static
     {
@@ -68,7 +75,8 @@ final readonly class VisitResponse
     }
 
     /**
-     * A redirect to the persona picker, wherever it would return to.
+     * A 3xx status whose Location path is the persona picker, /_dev/personas,
+     * wherever it would return to.
      */
     public function assertRedirectsToSignIn(): static
     {
@@ -83,8 +91,8 @@ final readonly class VisitResponse
     }
 
     /**
-     * $text appears in the body as a reader sees it: HTML entities are
-     * decoded first, so any template engine's escaping matches.
+     * $text appears in the body with HTML entities decoded, so any template
+     * engine's escaping matches. Markup isn't stripped.
      */
     public function assertSee(string $text): static
     {
@@ -93,6 +101,9 @@ final readonly class VisitResponse
         return $this;
     }
 
+    /**
+     * $text doesn't appear in the body with HTML entities decoded.
+     */
     public function assertDontSee(string $text): static
     {
         Assert::assertStringNotContainsString($text, $this->readableBody(), "Expected not to see '{$text}'. " . $this->context());
